@@ -9,13 +9,15 @@ module FsLisp =
     type Const = 
     | Bool of bool
     | Int of int
+
+    type Ident = string
     
     type Token =
     | Const of Const
-    | Ident of string
+    | Ident of Ident
 
     type SymbolTableFunc = Token list -> SymbolTable -> Error<Token>
-    and SymbolTable = Map<Ident, SymbolTableFunc>
+    and SymbolTable = SymbolTable of Map<Ident, SymbolTableFunc>
 
     type AstNode =
     | Empty
