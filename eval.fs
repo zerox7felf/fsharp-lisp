@@ -9,15 +9,15 @@ module Eval =
 
     let areSame = LanguagePrimitives.PhysicalEquality // Equality comparison for functions
 
-    let rec eval (SymbolTable symbols) (ast: AstNode) : Error<Token> =
+    let rec eval (SymbolTable symbols) (ast: AstNode) : Error<Token * SymbolTable> =
         match ast with
         | Empty ->
-            ErrSome(Const(Void))
+            ErrSome(Const(Void), (SymbolTable(symbols)))
         | Value value ->
-            ErrSome(value)
+            ErrSome(value, (SymbolTable(symbols)))
         | Node (identExpr, nodeList) ->
             match eval (SymbolTable symbols) identExpr with
-            | ErrSome(Ident(ident)) -> 
+            | ErrSome(Ident(ident), (SymbolTable symbols)) -> 
                 match symbols.TryFind (ident) with
                 | Some symbol ->
                     // printf "Symbol ('%s'): %A\n" ident symbol
@@ -29,7 +29,7 @@ module Eval =
                 | None ->
                     Error("Symbol " + ident + " was not found")
             | Error(msg) -> Error(msg)
-            | ErrSome(Const(constant)) ->
+            | ErrSome(Const(constant), _) ->
                 Error(
                     "Attempt to use " + (
                         match constant with
@@ -47,29 +47,37 @@ module Eval =
         //            lastValue
         //    iterateSequence (SymbolTable symbols) (seq) (ErrSome(Const(Void)))
 
-    let opArith (ast: AstNode list) (table: SymbolTable) (op) : Error<Token> =
+    let opArith (ast: AstNode list) (table: SymbolTable) (op) : Error<Token * SymbolTable> =
         if not (ast.Length = 2) then
             Error "Invalid number of arguments in arithmetic operation"
         else
-            let left = eval table ast.[0]
-            let right = eval table ast.[1]
-            match (left, right) with
-            | (ErrSome(Const(Int(left))), ErrSome(Const(Int(right)))) ->
-                ErrSome(Const(Int(op left right)))
-            | _ ->
-                Error "Invalid types in arithmetic operation"
+            match eval table ast.[0] with
+            | ErrSome(left, _) ->
+                match eval table ast.[1] with
+                | ErrSome(right, _) ->
+                    match (left, right) with
+                    | (Const(Int(left)), Const(Int(right))) ->
+                        ErrSome(Const(Int(op left right)), table)
+                    | _ ->
+                        Error "Invalid types in arithmetic operation"
+                | Error(msg) -> Error(msg)
+            | Error(msg) -> Error(msg)
 
     let relationalArith (ast: AstNode list) (table: SymbolTable) (op) =
         if not (ast.Length = 2) then
             Error "Invalid number of arguments in relational arithmetic operation"
         else
-            let left = eval table ast.[0]
-            let right = eval table ast.[1]
-            match (ErrSome(left), ErrSome(right)) with
-            | (ErrSome(left), ErrSome(right)) ->
-                ErrSome(Const(Bool(op left right)))
-            | _ ->
-                Error "Invalid types in relational arithmetic operation"
+            match eval table ast.[0] with
+            | ErrSome(left, _) ->
+                match eval table ast.[1] with
+                | ErrSome(right, _) ->
+                    match (left, right) with
+                    | (Const(Bool(left)), Const(Bool(right))) ->
+                        ErrSome(Const(Bool(op left right)), table)
+                    | _ ->
+                        Error "Invalid types in relational arithmetic operation"
+                | Error(msg) -> Error(msg)
+            | Error(msg) -> Error(msg)
 
     let stdSymbols : SymbolTable =
         SymbolTable(
@@ -127,17 +135,16 @@ module Eval =
                         if num_args < 2 then
                             Error "Invalid number of arguments in 'if' function"
                         else
-                            let cond = eval table ast.[0]
-                            match ErrSome(cond) with
-                            | ErrSome(value) ->
+                            match eval table ast.[0] with
+                            | ErrSome(value, table) ->
                                 match value with
-                                | ErrSome(Const(Bool(true))) ->
+                                | Const(Bool(true)) ->
                                     eval table ast.[1]
-                                | ErrSome(Const(Bool(false))) ->
+                                | Const(Bool(false)) ->
                                     if num_args = 3 then
                                         eval table ast.[2]
                                     else
-                                        cond
+                                        ErrSome(value, table)
                                 | _ ->
                                     Error "Invalid type in 'if' function condition"
                             | Error(err) ->
@@ -156,7 +163,7 @@ module Eval =
                             Error "Invalid number of arguments"
                         else
                             match (eval table ast.[0]) with
-                            | ErrSome(result) ->
+                            | ErrSome(result, table) ->
                                 match result with
                                 | Const(Bool(value)) ->
                                     printf "%A\n" value
@@ -166,11 +173,21 @@ module Eval =
                                     printf "Void\n"
                                 | Ident value ->
                                     printf "%A\n" value
-                                ErrSome(result)
+                                ErrSome(result, table)
                             | Error(err) ->
                                 Error(err)
                     )
                 );
+                //(
+                //    "->", // run arguments consecutively. name WIP
+                //    (fun (ast: AstNode list) (table: SymbolTable) ->
+                //        let rec execNext expressions table =
+                //            match expressions with
+                //            | head :: tail ->
+                //                
+                //            | _ -> table
+                //    )
+                //);
                 (
                     "test",
                     (fun (ast: AstNode list) (table: SymbolTable) -> Error "Not implemented!")

@@ -115,7 +115,13 @@ module Parser =
 
             | ')' ->
                 // End of expression
-                match expressionListToAst parsedSubexpressions [] with
+                match expressionListToAst
+                    (
+                        if currWord = "" then
+                            parsedSubexpressions
+                        else
+                            (parsedSubexpressions@[Token(makeToken currWord)])
+                    ) [] with
                 | ErrSome astNode -> (ErrSome(astNode, SymbolTable symbolTable), (index, line, col))
                 | Error msg -> (Error msg, (index, line, col))
             | _ when Char.IsWhiteSpace(Convert.ToChar(input.[0])) ->

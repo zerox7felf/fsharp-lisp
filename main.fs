@@ -46,7 +46,7 @@ module FsLisp =
                 astToString [ast] 0
                 match eval stdSymbols ast with
                 | Error msg -> printfn "Ajdå. \n%A" msg
-                | ErrSome token ->
+                | ErrSome(token, _) ->
                     printf "Return: "
                     match token with
                     | Ident ident -> printfn "%A" token

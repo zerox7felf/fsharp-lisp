@@ -22,5 +22,5 @@ module Types =
     | Node of (AstNode * AstNode list)
     //| Seq of AstNode list
 
-    type SymbolTableFunc = AstNode list -> SymbolTable -> Error<Token>
+    type SymbolTableFunc = AstNode list -> SymbolTable -> Error<Token * SymbolTable>
     and SymbolTable = SymbolTable of Map<Ident, SymbolTableFunc>
