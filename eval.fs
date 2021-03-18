@@ -9,38 +9,40 @@ module Eval =
 
     let areSame = LanguagePrimitives.PhysicalEquality // Equality comparison for functions
 
-    let eval (SymbolTable symbols) (ast: AstNode) : Const =
+    let rec eval (SymbolTable symbols) (ast: AstNode) : Error<Const> =
         match ast with
         | Empty ->
-            Void
+            ErrSome(Void)
         | Value value ->
-            value
+            ErrSome(value)
         | Node (ident, nodeList) ->
             match symbols.TryFind (ident) with
             | Some symbol ->
                 // printf "Symbol ('%s'): %A\n" ident symbol
                 match symbol (nodeList) (SymbolTable symbols) with
                 | ErrSome result ->
-                    // printf "Result: %A\n" result
-                    result
+                    ErrSome(result)
                 | Error err ->
-                    printf "NOK: %s\n" err
-                    Void
+                    Error(err)
             | None ->
-                printf "Symbol '%s' was not found\n" ident
-                Void
+                Error("Symbol ' + ident + ' was not found")
         | Seq seq ->
-            printf "Seq\n"
-            Void
+            let rec iterateSequence (SymbolTable symbols) (seq: AstNode list) (lastValue: Error<Const>) : Error<Const> =
+                match seq with
+                | head :: tail ->
+                    iterateSequence (SymbolTable symbols) (tail) (eval (SymbolTable(symbols)) (head))
+                | _ ->
+                    lastValue
+            iterateSequence (SymbolTable symbols) (seq) (ErrSome(Void))
 
     let opArith (ast: AstNode list) (table: SymbolTable) (op) =
         if not (ast.Length = 2) then
             Error "Invalid number of arguments in arithmetic operation"
         else
-            let left : Const = eval table ast.[0]
-            let right : Const = eval table ast.[1]
+            let left = eval table ast.[0]
+            let right = eval table ast.[1]
             match (left, right) with
-            | (Int(left), Int(right)) ->
+            | (ErrSome(Int(left)), ErrSome(Int(right))) ->
                 ErrSome(Int(op left right))
             | _ ->
                 Error "Invalid types in arithmetic operation"
@@ -49,12 +51,12 @@ module Eval =
         if not (ast.Length = 2) then
             Error "Invalid number of arguments in relational arithmetic operation"
         else
-            let left : Const = eval table ast.[0]
-            let right : Const = eval table ast.[1]
-            match (left, right) with
-            | (Int(left), Int(right)) ->
+            let left = eval table ast.[0]
+            let right = eval table ast.[1]
+            match (ErrSome(left), ErrSome(right)) with
+            | (ErrSome(left), ErrSome(right)) ->
                 ErrSome(Bool(op left right))
-            | (Bool(left), Bool(right)) when (areSame op (=)) ->
+            | (ErrSome(left), ErrSome(right)) when (areSame op (=)) ->
                 ErrSome(Bool(left = right))
             | _ ->
                 Error "Invalid types in relational arithmetic operation"
@@ -62,16 +64,32 @@ module Eval =
     let evalRun =
         let ast =
             Node(
-                "<",
+                "if",
                 [
-                    Value(Int(2));
-                    Node(
-                        "+",
+                    Seq(
                         [
-                            Value(Int(3));
-                            Value(Int(4));
+                            Node(
+                                "if",
+                                [
+                                    Seq(
+                                        [Value(Bool(true));]
+                                    );
+                                    Seq(
+                                        [Value(Bool(true));]
+                                    );
+                                    Seq(
+                                        [Value(Bool(false));]
+                                    );
+                                ]
+                            )
                         ]
-                    )
+                    );
+                    Seq(
+                        [Value(Int(5));]
+                    );
+                    Seq(
+                        [Value(Int(7));]
+                    );
                 ]
             )
 
@@ -121,6 +139,30 @@ module Eval =
                         )
                     );
                     (
+                        // \--if
+                        //    \-- (cond)
+                        //    \-- (true-body)
+                        //    \-- (false-body)
+                        "if",
+                        (fun (ast: AstNode list) (table: SymbolTable) ->
+                            if not (ast.Length = 3) then
+                                Error "Invalid number of arguments in 'if' function"
+                            else
+                                let cond = eval table ast.[0]
+                                match ErrSome(cond) with
+                                | ErrSome(value) ->
+                                    match value with
+                                    | ErrSome(Bool(true)) ->
+                                        eval table ast.[1]
+                                    | ErrSome(Bool(false)) ->
+                                        eval table ast.[2]
+                                    | _ ->
+                                        Error "Invalid type in 'if' function condition"
+                                | Error(err) ->
+                                    Error err
+                        )
+                    );
+                    (
                         "test",
                         (fun (ast: AstNode list) (table: SymbolTable) -> Error "Not implemented!")
                     );
@@ -128,4 +170,8 @@ module Eval =
             )
 
         let result = eval symbols ast
-        printf "Result: %A\n" result
+        match result with
+        | Error(err) ->
+            printf "Runtime error: %s\n" err
+        | _ ->
+            printf "Result: %A\n" result
