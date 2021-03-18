@@ -12,11 +12,12 @@ module FsLisp =
         | head :: tail ->
             match head with
             | Empty -> printf "%s%s\n" (String.replicate depth " ") "Empty" 
-            | Value constant -> 
-                match constant with
-                | Bool boolean -> printf "%s%s\n" (String.replicate depth " ") (if boolean then "true" else "false")
-                | Int integer -> printf "%s%s\n" (String.replicate depth " ") (string integer)
-                | Void -> printf "Void!\n"
+            | Value token -> 
+                match token with
+                | Ident ident -> printf "%s%s\n" (String.replicate depth " ") ident
+                | Const(Bool boolean) -> printf "%s%s\n" (String.replicate depth " ") (if boolean then "true" else "false")
+                | Const(Int integer) -> printf "%s%s\n" (String.replicate depth " ") (string integer)
+                | Const(Void) -> printf "Void!\n"
             | Node(identifier, nodes) ->
                 printf "%s%s\n" (String.replicate depth " ") identifier
                 astToString nodes (depth + 4)
