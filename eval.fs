@@ -56,8 +56,6 @@ module Eval =
             match (ErrSome(left), ErrSome(right)) with
             | (ErrSome(left), ErrSome(right)) ->
                 ErrSome(Bool(op left right))
-            | (ErrSome(left), ErrSome(right)) when (areSame op (=)) ->
-                ErrSome(Bool(left = right))
             | _ ->
                 Error "Invalid types in relational arithmetic operation"
 
@@ -110,10 +108,11 @@ module Eval =
                     // \--if
                     //    \-- (cond)
                     //    \-- (true-body)
-                    //    \-- (false-body)
+                    //    \-- (false-body)  -- optional
                     "if",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
-                        if not (ast.Length = 3) then
+                        let num_args = ast.Length
+                        if num_args < 2 then
                             Error "Invalid number of arguments in 'if' function"
                         else
                             let cond = eval table ast.[0]
@@ -123,7 +122,10 @@ module Eval =
                                 | ErrSome(Bool(true)) ->
                                     eval table ast.[1]
                                 | ErrSome(Bool(false)) ->
-                                    eval table ast.[2]
+                                    if num_args = 3 then
+                                        eval table ast.[2]
+                                    else
+                                        cond
                                 | _ ->
                                     Error "Invalid type in 'if' function condition"
                             | Error(err) ->
@@ -148,13 +150,10 @@ module Eval =
                                 "if",
                                 [
                                     Seq(
-                                        [Value(Bool(true));]
-                                    );
-                                    Seq(
-                                        [Value(Bool(true));]
-                                    );
-                                    Seq(
                                         [Value(Bool(false));]
+                                    );
+                                    Seq(
+                                        [Value(Bool(true));]
                                     );
                                 ]
                             )
