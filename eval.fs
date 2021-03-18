@@ -72,7 +72,7 @@ module Eval =
                 match eval table ast.[1] with
                 | ErrSome(right, _) ->
                     match (left, right) with
-                    | (Const(Bool(left)), Const(Bool(right))) ->
+                    | (left, right) ->
                         ErrSome(Const(Bool(op left right)), table)
                     | _ ->
                         Error "Invalid types in relational arithmetic operation"
@@ -152,7 +152,7 @@ module Eval =
                     )
                 );
                 (
-                    "define",
+                    "test",
                     (fun (ast: AstNode list) (table: SymbolTable) -> Error "Not implemented!")
                 );
                 (
@@ -178,19 +178,71 @@ module Eval =
                                 Error(err)
                     )
                 );
-                //(
-                //    "->", // run arguments consecutively. name WIP
-                //    (fun (ast: AstNode list) (table: SymbolTable) ->
-                //        let rec execNext expressions table =
-                //            match expressions with
-                //            | head :: tail ->
-                //                
-                //            | _ -> table
-                //    )
-                //);
                 (
-                    "test",
-                    (fun (ast: AstNode list) (table: SymbolTable) -> Error "Not implemented!")
+                    "->", // run arguments consecutively. name WIP
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        let rec loop expressions lastTkn table =
+                            match expressions with
+                            | head :: tail ->
+                                match eval table head with
+                                | ErrSome(tkn, table) -> loop tail tkn table
+                                | Error(msg) -> Error(msg)
+                            | _ -> ErrSome(lastTkn, table)
+                        loop ast (Const(Void)) table
+                    )
+                );
+                (
+                    "define",
+                    (fun (ast: AstNode list) (SymbolTable mainTable) -> 
+                        if ast.Length < 2 then
+                            Error("Missing arguments for function definition")
+                        else
+                            match eval (SymbolTable mainTable) ast.[0] with
+                            | Error(msg) -> Error(msg)
+                            | ErrSome(tkn, SymbolTable table) ->
+                                match tkn with
+                                | Const(constant) -> Error("Attempt to use constant as function identifier")
+                                | Ident name ->
+                                    let rec loop astList argList =
+                                        match astList with
+                                        | head :: tail ->
+                                            match eval (SymbolTable table) head with
+                                            | Error(msg) -> Error(msg)
+                                            | ErrSome(tkn, _) ->
+                                                match tkn with
+                                                | Const(constant) -> Error("Attempt to use constant as function argument identifier")
+                                                | Ident argName ->
+                                                    loop tail (argList@[(argName)])
+                                        | _ -> ErrSome(argList)
+                                    match loop (if ast.Length > 2 then ast.[1..(ast.Length - 2)] else []) [] with
+                                    | Error(msg) -> Error(msg)
+                                    | ErrSome(args) ->
+                                        printfn "NAME:%A" name
+                                        printfn "ARGS:%A" args
+                                        ErrSome(
+                                            Const(Void),
+                                            SymbolTable(
+                                                table.Add(name, (fun (localAst: AstNode list) (SymbolTable table) ->
+                                                    let rec loop argName argVal (SymbolTable table) =
+                                                        match (argName, argVal) with
+                                                        | (name :: nameTail, currVal :: valTail) ->
+                                                            loop nameTail valTail (
+                                                                SymbolTable(
+                                                                    table.Add(name, (fun _ tbl ->
+                                                                        eval (SymbolTable(table)) currVal
+                                                                    ))
+                                                                )
+                                                            )
+                                                        | _ -> table
+                                                    eval (
+                                                        SymbolTable(
+                                                            loop args localAst (SymbolTable table)
+                                                        )
+                                                    ) ast.[(ast.Length - 1)]
+                                                ))
+                                            )
+                                        )
+                    )
                 );
             ]
         )

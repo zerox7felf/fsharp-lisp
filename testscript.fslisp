@@ -1,1 +1,12 @@
-(== true true)
+(->
+    (define grej counter thing (
+        if (== (counter ()) 0)
+            (print WeDoneHere)
+            (->
+                (print (thing ()))
+                (grej (- (counter ()) 1) ojoj)
+            )
+    ))
+    (grej 9 Hejsan)
+    (print (counter ()))
+)

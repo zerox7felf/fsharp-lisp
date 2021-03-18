@@ -83,7 +83,7 @@ module Parser =
                 | Token token ->
                     expressionListToAst tail (currArgs@[Value token])
             | _ when currArgs.Length = 0 ->
-                Error "Empty expression"
+                ErrSome(Empty)
             | _ when currArgs.Length = 1 ->
                 ErrSome(currArgs.[0])
             | _ ->
