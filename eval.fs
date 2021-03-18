@@ -9,7 +9,7 @@ module Eval =
 
     let areSame = LanguagePrimitives.PhysicalEquality // Equality comparison for functions
 
-    let rec eval (SymbolTable symbols) (ast: AstNode) : Error<Const> =
+    let rec eval (SymbolTable symbols) (ast: AstNode) : Error<Token> =
         match ast with
         | Empty ->
             ErrSome(Void)
@@ -27,7 +27,7 @@ module Eval =
             | None ->
                 Error("Symbol ' + ident + ' was not found")
         | Seq seq ->
-            let rec iterateSequence (SymbolTable symbols) (seq: AstNode list) (lastValue: Error<Const>) : Error<Const> =
+            let rec iterateSequence (SymbolTable symbols) (seq: AstNode list) (lastValue: Error<Token>) : Error<Token> =
                 match seq with
                 | head :: tail ->
                     iterateSequence (SymbolTable symbols) (tail) (eval (SymbolTable(symbols)) (head))
@@ -35,15 +35,15 @@ module Eval =
                     lastValue
             iterateSequence (SymbolTable symbols) (seq) (ErrSome(Void))
 
-    let opArith (ast: AstNode list) (table: SymbolTable) (op) =
+    let opArith (ast: AstNode list) (table: SymbolTable) (op) : Error<Token> =
         if not (ast.Length = 2) then
             Error "Invalid number of arguments in arithmetic operation"
         else
             let left = eval table ast.[0]
             let right = eval table ast.[1]
             match (left, right) with
-            | (ErrSome(Int(left)), ErrSome(Int(right))) ->
-                ErrSome(Int(op left right))
+            | (ErrSome(Const(Int(left))), ErrSome(Const(Int(right)))) ->
+                ErrSome(Const(Int(op left right)))
             | _ ->
                 Error "Invalid types in arithmetic operation"
 
@@ -55,7 +55,7 @@ module Eval =
             let right = eval table ast.[1]
             match (ErrSome(left), ErrSome(right)) with
             | (ErrSome(left), ErrSome(right)) ->
-                ErrSome(Bool(op left right))
+                ErrSome(Value(Const(Bool(op left right))))
             | _ ->
                 Error "Invalid types in relational arithmetic operation"
 
@@ -133,7 +133,7 @@ module Eval =
                     )
                 );
                 (
-                    "test",
+                    "define",
                     (fun (ast: AstNode list) (table: SymbolTable) -> Error "Not implemented!")
                 );
                 (
@@ -152,10 +152,14 @@ module Eval =
                                     printf "%A\n" value
                                 | Void ->
                                     printf "Void\n"
-                                ErrSome(result)
+                                ErrSome(Const(result))
                             | Error(err) ->
                                 Error(err)
                     )
+                );
+                (
+                    "test",
+                    (fun (ast: AstNode list) (table: SymbolTable) -> Error "Not implemented!")
                 );
             ]
         )
@@ -171,20 +175,20 @@ module Eval =
                                 "if",
                                 [
                                     Seq(
-                                        [Value(Bool(false));]
+                                        [Value(Const(Bool(false)));]
                                     );
                                     Seq(
-                                        [Value(Bool(true));]
+                                        [Value(Const(Bool(true)));]
                                     );
                                 ]
                             )
                         ]
                     );
                     Seq(
-                        [Value(Int(5));]
+                        [Value(Const(Int(5)));]
                     );
                     Seq(
-                        [Value(Int(7));]
+                        [Value(Const(Int(7)));]
                     );
                 ]
             )
