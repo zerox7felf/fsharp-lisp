@@ -18,7 +18,7 @@ module Types =
 
     type AstNode =
     | Empty
-    | Value of Const
+    | Value of Token
     | Node of (Ident * AstNode list)
     | Seq of AstNode list
 
