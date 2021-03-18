@@ -1,6 +1,7 @@
 // main.fs
 
 namespace FsLisp
+open System.IO
 open Types
 open Parser
 open Eval
@@ -15,6 +16,7 @@ module FsLisp =
                 match constant with
                 | Bool boolean -> printf "%s%s\n" (String.replicate depth " ") (if boolean then "true" else "false")
                 | Int integer -> printf "%s%s\n" (String.replicate depth " ") (string integer)
+                | Void -> printf "Void!\n"
             | Node(identifier, nodes) ->
                 printf "%s%s\n" (String.replicate depth " ") identifier
                 astToString nodes (depth + 4)
@@ -23,13 +25,32 @@ module FsLisp =
             astToString tail depth
         | _ -> ()
 
-    let input = "(\n\ttjena 1281273 true (\n\t\tflabb 12\n\t)\n)" 
-    printfn "%A" input
-    let result = parse input (SymbolTable (Map.ofList []))
-    printfn "%A" result
-    match result with
-    | (Error msg, (index, line, col)) ->
-        printfn "Ajdå."
-    | (ErrSome (ast, _), (index, line, col)) ->
-        printfn "%A" ast
-        astToString [ast] 0
+
+    [<EntryPoint>]
+    let main args =
+        if args.Length <> 1 then
+            printfn "Usage: Main.exe <script file>"
+            1
+        else
+            let input = File.ReadAllText(args.[0])
+
+            printfn "Expression:\n%A" input
+
+            let result = parse input stdSymbols
+            printfn "Return value from parse:\n%A" result
+
+            match result with
+            | (Error msg, (index, line, col)) ->
+                printfn "Ajdå."
+            | (ErrSome (ast, _), (index, line, col)) ->
+                printfn "Generated Ast:\n%A" ast
+                astToString [ast] 0
+                match eval stdSymbols ast with
+                | Error msg -> printfn "Ajdå. \n%A" msg
+                | ErrSome constant ->
+                    printf "Return: "
+                    match constant with
+                    | Bool boolean -> printfn "%A" boolean
+                    | Int integer -> printfn "%A" integer
+                    | Void -> printfn "Void!"
+            0

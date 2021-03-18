@@ -50,20 +50,19 @@ module Parser =
                     //     input.[1..] (index+1, line, col+1)
                     //     (number + (int(Char.GetNumericValue(input.[0]))) * (pown 10 pos)) (pos + 1)
                     //     symbolTable parsedSubexpressions
-                | ')'
                 | _ when Char.IsWhiteSpace(Convert.ToChar(input.[0])) ->
+                    parser input (index, line, col) symbolTable (parsedSubexpressions@[AstNode(Value(Int (buildNumber 0 numberBuf 0)))]) ""
+                | ')' ->
                     parser input (index, line, col) symbolTable (parsedSubexpressions@[AstNode(Value(Int (buildNumber 0 numberBuf 0)))]) ""
                 | _ ->
                     (Error ("Unexpected character " + (string input.[0]) + " in number"), (index, line, col))
 
         // Turn string into token
-        let makeToken word : Error<Token> = 
-            ErrSome(
-                match word with
-                | "true" -> Const(Bool true)
-                | "false" -> Const(Bool false)
-                | _ -> Ident word
-            )
+        let makeToken word : Token = 
+            match word with
+            | "true" -> Const(Bool true)
+            | "false" -> Const(Bool false)
+            | _ -> Ident word
 
         // Turn list of ExpressionParts into AstNode
         let rec expressionListToAst parsedSubexpressions currIdent currArgs : Error<AstNode> = 
@@ -99,16 +98,18 @@ module Parser =
                 parseNumber input (index, line, col) [] (SymbolTable symbolTable) parsedSubexpressions
             | '(' ->
                 // Subexpression
-                if currWord = "" then
-                    match parser input.[1..] (index+1, line, col+1) (SymbolTable symbolTable) [] "" with
-                    | (Error msg, (newIndex, newLine, newCol)) -> (Error msg, (newIndex, line, col))
-                    | (ErrSome (astNode, newSymbolTable), (newIndex, newLine, newCol)) ->
-                        if (1+newIndex-index) > input.Length then
-                            (Error "Unexpected end of file", (index, line, col))
-                        else
-                            parser input.[(1+newIndex-index)..] (newIndex+1, newLine, newCol) newSymbolTable (parsedSubexpressions@[AstNode astNode]) ""
-                else
-                    (Error "Unexpected expression start in the middle of token", (index, line, col))
+                match parser input.[1..] (index+1, line, col+1) (SymbolTable symbolTable) [] "" with
+                | (Error msg, (newIndex, newLine, newCol)) -> (Error msg, (newIndex, line, col))
+                | (ErrSome (astNode, newSymbolTable), (newIndex, newLine, newCol)) ->
+                    if (1+newIndex-index) > input.Length then
+                        (Error "Unexpected end of file", (index, line, col))
+                    else
+                        parser input.[(1+newIndex-index)..] (newIndex+1, newLine, newCol) newSymbolTable (
+                            if currWord = "" then
+                                parsedSubexpressions@[AstNode astNode]
+                            else
+                                (parsedSubexpressions@[Token (makeToken currWord)])@[AstNode astNode]
+                        ) ""
 
             | ')' ->
                 // End of expression
@@ -120,9 +121,7 @@ module Parser =
                 if currWord = "" then
                     parseWhiteSpace input (index, line, col) (SymbolTable symbolTable) parsedSubexpressions
                 else 
-                    match makeToken currWord with
-                    | ErrSome token -> parseWhiteSpace input.[1..] (index+1, line, col+1) (SymbolTable symbolTable) (parsedSubexpressions@[Token token])
-                    | Error msg -> (Error msg, (index, line, col))
+                    parseWhiteSpace input.[1..] (index+1, line, col+1) (SymbolTable symbolTable) (parsedSubexpressions@[Token(makeToken currWord)])
             | _ ->
                 // Other token (either keyword or identifier)
                 parser input.[1..] (index+1, line, col+1) (SymbolTable symbolTable) parsedSubexpressions (currWord + (string input.[0]))
