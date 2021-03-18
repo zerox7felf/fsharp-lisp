@@ -1,6 +1,9 @@
+// main.fs
+
 namespace FsLisp
 open Types
 open Parser
+open Eval
 
 module FsLisp = 
     let rec astToString (astList: AstNode list) depth =

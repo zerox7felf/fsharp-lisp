@@ -8,6 +8,7 @@ module Types =
     type Const = 
     | Bool of bool
     | Int of int
+    | Void
 
     type Ident = string
     
@@ -23,4 +24,3 @@ module Types =
 
     type SymbolTableFunc = AstNode list -> SymbolTable -> Error<Const>
     and SymbolTable = SymbolTable of Map<Ident, SymbolTableFunc>
-
