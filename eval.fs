@@ -15,25 +15,37 @@ module Eval =
             ErrSome(Const(Void))
         | Value value ->
             ErrSome(value)
-        | Node (ident, nodeList) ->
-            match symbols.TryFind (ident) with
-            | Some symbol ->
-                // printf "Symbol ('%s'): %A\n" ident symbol
-                match symbol (nodeList) (SymbolTable symbols) with
-                | ErrSome result ->
-                    ErrSome(result)
-                | Error err ->
-                    Error(err)
-            | None ->
-                Error("Symbol ' + ident + ' was not found")
-        | Seq seq ->
-            let rec iterateSequence (SymbolTable symbols) (seq: AstNode list) (lastValue: Error<Token>) : Error<Token> =
-                match seq with
-                | head :: tail ->
-                    iterateSequence (SymbolTable symbols) (tail) (eval (SymbolTable(symbols)) (head))
-                | _ ->
-                    lastValue
-            iterateSequence (SymbolTable symbols) (seq) (ErrSome(Const(Void)))
+        | Node (identExpr, nodeList) ->
+            match eval (SymbolTable symbols) identExpr with
+            | ErrSome(Ident(ident)) -> 
+                match symbols.TryFind (ident) with
+                | Some symbol ->
+                    // printf "Symbol ('%s'): %A\n" ident symbol
+                    match symbol (nodeList) (SymbolTable symbols) with
+                    | ErrSome result ->
+                        ErrSome(result)
+                    | Error err ->
+                        Error(err)
+                | None ->
+                    Error("Symbol " + ident + " was not found")
+            | Error(msg) -> Error(msg)
+            | ErrSome(Const(constant)) ->
+                Error(
+                    "Attempt to use " + (
+                        match constant with
+                        | Bool boolean -> "boolean (" + (if boolean then "true" else "false") + ")"
+                        | Int integer -> "integer (" + (string integer) + ")"
+                        | Void -> "void"
+                    ) + " as function identifier"
+                )
+        //| Seq seq ->
+        //    let rec iterateSequence (SymbolTable symbols) (seq: AstNode list) (lastValue: Error<Token>) : Error<Token> =
+        //        match seq with
+        //        | head :: tail ->
+        //            iterateSequence (SymbolTable symbols) (tail) (eval (SymbolTable(symbols)) (head))
+        //        | _ ->
+        //            lastValue
+        //    iterateSequence (SymbolTable symbols) (seq) (ErrSome(Const(Void)))
 
     let opArith (ast: AstNode list) (table: SymbolTable) (op) : Error<Token> =
         if not (ast.Length = 2) then
@@ -140,7 +152,7 @@ module Eval =
                     "print",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
                         let num_args = ast.Length
-                        if num_args < 1 then
+                        if num_args <> 1 then
                             Error "Invalid number of arguments"
                         else
                             match (eval table ast.[0]) with
@@ -169,29 +181,17 @@ module Eval =
     let evalRun() =
         let ast =
             Node(
-                "if",
+                Value(Ident("if")),
                 [
-                    Seq(
+                    Node(
+                        Value(Ident("if")),
                         [
-                            Node(
-                                "if",
-                                [
-                                    Seq(
-                                        [Value(Const(Bool(false)));]
-                                    );
-                                    Seq(
-                                        [Value(Const(Bool(true)));]
-                                    );
-                                ]
-                            )
+                            Value(Const(Bool(false)));
+                            Value(Const(Bool(true)));
                         ]
                     );
-                    Seq(
-                        [Value(Const(Int(5)));]
-                    );
-                    Seq(
-                        [Value(Const(Int(7)));]
-                    );
+                    Value(Const(Int(5)));
+                    Value(Const(Int(7)));
                 ]
             )
 

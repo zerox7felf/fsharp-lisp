@@ -19,10 +19,8 @@ module FsLisp =
                 | Const(Int integer) -> printf "%s%s\n" (String.replicate depth " ") (string integer)
                 | Const(Void) -> printf "Void!\n"
             | Node(identifier, nodes) ->
-                printf "%s%s\n" (String.replicate depth " ") identifier
+                astToString [identifier] depth
                 astToString nodes (depth + 4)
-            | Seq list ->
-                astToString list depth
             astToString tail depth
         | _ -> ()
 

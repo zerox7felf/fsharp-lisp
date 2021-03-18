@@ -74,27 +74,20 @@ module Parser =
             | _ -> Ident word
 
         // Turn list of ExpressionParts into AstNode
-        let rec expressionListToAst parsedSubexpressions currIdent currArgs : Error<AstNode> = 
+        let rec expressionListToAst parsedSubexpressions currArgs : Error<AstNode> = 
             match parsedSubexpressions with
             | head :: tail ->
                 match head with
                 | AstNode node -> 
-                    expressionListToAst tail currIdent (currArgs@[node])
+                    expressionListToAst tail (currArgs@[node])
                 | Token token ->
-                    match token with
-                    | Ident identifier when currIdent = "" && currArgs.Length = 0 ->
-                        expressionListToAst tail identifier []
-                    | Const _
-                    | Ident _ ->
-                        expressionListToAst tail currIdent (currArgs@[Value token])
-            | _ when currIdent = "" && currArgs.Length = 0 ->
+                    expressionListToAst tail (currArgs@[Value token])
+            | _ when currArgs.Length = 0 ->
                 Error "Empty expression"
-            | _ when currIdent = "" && currArgs.Length = 1 ->
+            | _ when currArgs.Length = 1 ->
                 ErrSome(currArgs.[0])
-            | _ when currIdent = "" ->
-                ErrSome(Seq(currArgs))
             | _ ->
-                ErrSome(Node(currIdent, currArgs))
+                ErrSome(Node(currArgs.[0], currArgs.[1..]))
 
         printfn "%A" (input.Replace("\n", "\\n"))
         if input = "" then
@@ -122,7 +115,7 @@ module Parser =
 
             | ')' ->
                 // End of expression
-                match expressionListToAst parsedSubexpressions "" [] with
+                match expressionListToAst parsedSubexpressions [] with
                 | ErrSome astNode -> (ErrSome(astNode, SymbolTable symbolTable), (index, line, col))
                 | Error msg -> (Error msg, (index, line, col))
             | _ when Char.IsWhiteSpace(Convert.ToChar(input.[0])) ->
