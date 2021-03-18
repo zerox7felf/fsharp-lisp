@@ -51,10 +51,6 @@ module Parser =
                          input.[1..] (index+1, line, col+1) expressionDepth
                          (input.[0] :: numberBuf)
                          symbolTable parsedSubexpressions
-                    // parseNumber
-                    //     input.[1..] (index+1, line, col+1)
-                    //     (number + (int(Char.GetNumericValue(input.[0]))) * (pown 10 pos)) (pos + 1)
-                    //     symbolTable parsedSubexpressions
                 | _ when Char.IsWhiteSpace(Convert.ToChar(input.[0])) ->
                     parser input (index, line, col) expressionDepth symbolTable (
                         parsedSubexpressions@[
@@ -84,7 +80,6 @@ module Parser =
                 match head with
                 | AstNode node -> 
                     expressionListToAst tail currIdent (currArgs@[node])
-                    // TODO: handle sequential expressions
                 | Token token ->
                     match token with
                     | Ident identifier when currIdent = "" && currArgs.Length = 0 ->
@@ -96,6 +91,8 @@ module Parser =
                 Error "Empty expression"
             | _ when currIdent = "" && currArgs.Length = 1 ->
                 ErrSome(currArgs.[0])
+            | _ when currIdent = "" ->
+                ErrSome(Seq(currArgs))
             | _ ->
                 ErrSome(Node(currIdent, currArgs))
 
