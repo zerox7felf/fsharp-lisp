@@ -12,7 +12,7 @@ module Eval =
     let rec eval (SymbolTable symbols) (ast: AstNode) : Error<Token> =
         match ast with
         | Empty ->
-            ErrSome(Void)
+            ErrSome(Const(Void))
         | Value value ->
             ErrSome(value)
         | Node (ident, nodeList) ->
@@ -33,7 +33,7 @@ module Eval =
                     iterateSequence (SymbolTable symbols) (tail) (eval (SymbolTable(symbols)) (head))
                 | _ ->
                     lastValue
-            iterateSequence (SymbolTable symbols) (seq) (ErrSome(Void))
+            iterateSequence (SymbolTable symbols) (seq) (ErrSome(Const(Void)))
 
     let opArith (ast: AstNode list) (table: SymbolTable) (op) : Error<Token> =
         if not (ast.Length = 2) then
@@ -55,7 +55,7 @@ module Eval =
             let right = eval table ast.[1]
             match (ErrSome(left), ErrSome(right)) with
             | (ErrSome(left), ErrSome(right)) ->
-                ErrSome(Value(Const(Bool(op left right))))
+                ErrSome(Const(Bool(op left right)))
             | _ ->
                 Error "Invalid types in relational arithmetic operation"
 
@@ -119,9 +119,9 @@ module Eval =
                             match ErrSome(cond) with
                             | ErrSome(value) ->
                                 match value with
-                                | ErrSome(Bool(true)) ->
+                                | ErrSome(Const(Bool(true))) ->
                                     eval table ast.[1]
-                                | ErrSome(Bool(false)) ->
+                                | ErrSome(Const(Bool(false))) ->
                                     if num_args = 3 then
                                         eval table ast.[2]
                                     else
@@ -146,13 +146,15 @@ module Eval =
                             match (eval table ast.[0]) with
                             | ErrSome(result) ->
                                 match result with
-                                | Bool(value) ->
+                                | Const(Bool(value)) ->
                                     printf "%A\n" value
-                                | Int(value) ->
+                                | Const(Int(value)) ->
                                     printf "%A\n" value
-                                | Void ->
+                                | Const(Void) ->
                                     printf "Void\n"
-                                ErrSome(Const(result))
+                                | Ident value ->
+                                    printf "%A\n" value
+                                ErrSome(result)
                             | Error(err) ->
                                 Error(err)
                     )

@@ -48,10 +48,11 @@ module FsLisp =
                 astToString [ast] 0
                 match eval stdSymbols ast with
                 | Error msg -> printfn "Ajdå. \n%A" msg
-                | ErrSome constant ->
+                | ErrSome token ->
                     printf "Return: "
-                    match constant with
-                    | Bool boolean -> printfn "%A" boolean
-                    | Int integer -> printfn "%A" integer
-                    | Void -> printfn "Void!"
+                    match token with
+                    | Ident ident -> printfn "%A" token
+                    | Const(Bool boolean) -> printfn "%A" boolean
+                    | Const(Int integer) -> printfn "%A" integer
+                    | Const(Void) -> printfn "Void!"
             0
