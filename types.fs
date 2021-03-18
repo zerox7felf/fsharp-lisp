@@ -2,12 +2,13 @@ namespace FsLisp
 
 module Types =
     type Error<'a> =
-    | Some of 'a
+    | ErrSome of 'a
     | Error of string
 
     type Const = 
     | Bool of bool
     | Int of int
+    | Void
 
     type Ident = string
     
@@ -15,11 +16,11 @@ module Types =
     | Const of Const
     | Ident of Ident
 
-    type SymbolTableFunc = Token list -> SymbolTable -> Error<Token>
-    and SymbolTable = SymbolTable of Map<Ident, SymbolTableFunc>
-
     type AstNode =
     | Empty
     | Value of Const
     | Node of (Ident * AstNode list)
     | Seq of AstNode list
+
+    type SymbolTableFunc = AstNode list -> SymbolTable -> Error<Const>
+    and SymbolTable = SymbolTable of Map<Ident, SymbolTableFunc>
