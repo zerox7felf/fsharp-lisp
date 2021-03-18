@@ -136,6 +136,27 @@ module Eval =
                     "test",
                     (fun (ast: AstNode list) (table: SymbolTable) -> Error "Not implemented!")
                 );
+                (
+                    "print",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        let num_args = ast.Length
+                        if num_args < 1 then
+                            Error "Invalid number of arguments"
+                        else
+                            match (eval table ast.[0]) with
+                            | ErrSome(result) ->
+                                match result with
+                                | Bool(value) ->
+                                    printf "%A\n" value
+                                | Int(value) ->
+                                    printf "%A\n" value
+                                | Void ->
+                                    printf "Void\n"
+                                ErrSome(result)
+                            | Error(err) ->
+                                Error(err)
+                    )
+                );
             ]
         )
 
