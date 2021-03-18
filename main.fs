@@ -20,11 +20,13 @@ module FsLisp =
             astToString tail depth
         | _ -> ()
 
-    let result = parser "tjena 12 true       32 \n87)" (SymbolTable (Map.ofList [])) [] ""
+    let input = "(\n\ttjena 1281273 true (\n\t\tflabb 12\n\t)\n)" 
+    printfn "%A" input
+    let result = parse input (SymbolTable (Map.ofList []))
     printfn "%A" result
     match result with
-    | Error msg ->
+    | (Error msg, (index, line, col)) ->
         printfn "Ajdå."
-    | ErrSome (ast, _) ->
+    | (ErrSome (ast, _), (index, line, col)) ->
         printfn "%A" ast
         astToString [ast] 0
