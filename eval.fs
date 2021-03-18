@@ -61,7 +61,83 @@ module Eval =
             | _ ->
                 Error "Invalid types in relational arithmetic operation"
 
-    let evalRun =
+    let stdSymbols : SymbolTable =
+        SymbolTable(
+            Map.ofList [
+                (
+                    "+",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        opArith ast table (+)
+                    )
+                );
+                (
+                    "-",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        opArith ast table (-)
+                    )
+                );
+                (
+                    "*",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        opArith ast table (*)
+                    )
+                );
+                (
+                    "/",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        opArith ast table (/)
+                    )
+                );
+                (
+                    "==",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        relationalArith ast table (=)
+                    )
+                );
+                (
+                    "<",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        relationalArith ast table (<)
+                    )
+                );
+                (
+                    ">",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        relationalArith ast table (>)
+                    )
+                );
+                (
+                    // \--if
+                    //    \-- (cond)
+                    //    \-- (true-body)
+                    //    \-- (false-body)
+                    "if",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        if not (ast.Length = 3) then
+                            Error "Invalid number of arguments in 'if' function"
+                        else
+                            let cond = eval table ast.[0]
+                            match ErrSome(cond) with
+                            | ErrSome(value) ->
+                                match value with
+                                | ErrSome(Bool(true)) ->
+                                    eval table ast.[1]
+                                | ErrSome(Bool(false)) ->
+                                    eval table ast.[2]
+                                | _ ->
+                                    Error "Invalid type in 'if' function condition"
+                            | Error(err) ->
+                                Error err
+                    )
+                );
+                (
+                    "test",
+                    (fun (ast: AstNode list) (table: SymbolTable) -> Error "Not implemented!")
+                );
+            ]
+        )
+
+    let evalRun() =
         let ast =
             Node(
                 "if",
@@ -93,83 +169,7 @@ module Eval =
                 ]
             )
 
-        let symbols =
-            SymbolTable(
-                Map.ofList [
-                    (
-                        "+",
-                        (fun (ast: AstNode list) (table: SymbolTable) ->
-                            opArith ast table (+)
-                        )
-                    );
-                    (
-                        "-",
-                        (fun (ast: AstNode list) (table: SymbolTable) ->
-                            opArith ast table (-)
-                        )
-                    );
-                    (
-                        "*",
-                        (fun (ast: AstNode list) (table: SymbolTable) ->
-                            opArith ast table (*)
-                        )
-                    );
-                    (
-                        "/",
-                        (fun (ast: AstNode list) (table: SymbolTable) ->
-                            opArith ast table (/)
-                        )
-                    );
-                    (
-                        "==",
-                        (fun (ast: AstNode list) (table: SymbolTable) ->
-                            relationalArith ast table (=)
-                        )
-                    );
-                    (
-                        "<",
-                        (fun (ast: AstNode list) (table: SymbolTable) ->
-                            relationalArith ast table (<)
-                        )
-                    );
-                    (
-                        ">",
-                        (fun (ast: AstNode list) (table: SymbolTable) ->
-                            relationalArith ast table (>)
-                        )
-                    );
-                    (
-                        // \--if
-                        //    \-- (cond)
-                        //    \-- (true-body)
-                        //    \-- (false-body)
-                        "if",
-                        (fun (ast: AstNode list) (table: SymbolTable) ->
-                            if not (ast.Length = 3) then
-                                Error "Invalid number of arguments in 'if' function"
-                            else
-                                let cond = eval table ast.[0]
-                                match ErrSome(cond) with
-                                | ErrSome(value) ->
-                                    match value with
-                                    | ErrSome(Bool(true)) ->
-                                        eval table ast.[1]
-                                    | ErrSome(Bool(false)) ->
-                                        eval table ast.[2]
-                                    | _ ->
-                                        Error "Invalid type in 'if' function condition"
-                                | Error(err) ->
-                                    Error err
-                        )
-                    );
-                    (
-                        "test",
-                        (fun (ast: AstNode list) (table: SymbolTable) -> Error "Not implemented!")
-                    );
-                ]
-            )
-
-        let result = eval symbols ast
+        let result = eval stdSymbols ast
         match result with
         | Error(err) ->
             printf "Runtime error: %s\n" err
