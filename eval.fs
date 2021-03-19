@@ -19,7 +19,7 @@ module Eval =
             match eval (SymbolTable symbols) identExpr with
             | ErrSome(Ident(ident), (SymbolTable symbols)) -> 
                 match symbols.TryFind (ident) with
-                | Some symbol ->
+                | Some (symbol, _) ->
                     // printf "Symbol ('%s'): %A\n" ident symbol
                     match symbol (nodeList) (SymbolTable symbols) with
                     | ErrSome result ->
@@ -86,43 +86,43 @@ module Eval =
                     "+",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
                         opArith ast table (+)
-                    )
+                    , false)
                 );
                 (
                     "-",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
                         opArith ast table (-)
-                    )
+                    , false)
                 );
                 (
                     "*",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
                         opArith ast table (*)
-                    )
+                    , false)
                 );
                 (
                     "/",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
                         opArith ast table (/)
-                    )
+                    , false)
                 );
                 (
                     "==",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
                         relationalArith ast table (=)
-                    )
+                    , false)
                 );
                 (
                     "<",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
                         relationalArith ast table (<)
-                    )
+                    , false)
                 );
                 (
                     ">",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
                         relationalArith ast table (>)
-                    )
+                    , false)
                 );
                 (
                     // \--if
@@ -149,11 +149,11 @@ module Eval =
                                     Error "Invalid type in 'if' function condition"
                             | Error(err) ->
                                 Error err
-                    )
+                    , false)
                 );
                 (
                     "test",
-                    (fun (ast: AstNode list) (table: SymbolTable) -> Error "Not implemented!")
+                    ((fun (ast: AstNode list) (table: SymbolTable) -> Error "Not implemented!"), false)
                 );
                 (
                     "print",
@@ -186,7 +186,7 @@ module Eval =
                             iterateArgs (table) (ast) (ErrSome(Const(Void), table)) |> ignore
                             printf "\n"
                             ErrSome(Const(Void), table)
-                    )
+                    , false)
                 );
                 (
                     "->", // run arguments consecutively. name WIP
@@ -199,7 +199,7 @@ module Eval =
                                 | Error(msg) -> Error(msg)
                             | _ -> ErrSome(lastTkn, table)
                         loop ast (Const(Void)) table
-                    )
+                    , false)
                 );
                 (
                     "define",
@@ -240,19 +240,18 @@ module Eval =
                                                                 SymbolTable(
                                                                     table.Add(name, (fun _ tbl ->
                                                                         eval (SymbolTable(table)) currVal
-                                                                    ))
+                                                                    , true))
                                                                 )
                                                             )
                                                         | _ -> table
-                                                    eval (
-                                                        SymbolTable(
-                                                            loop args localAst (SymbolTable table)
-                                                        )
-                                                    ) ast.[(ast.Length - 1)]
-                                                ))
+                                                    match eval (SymbolTable(loop args localAst (SymbolTable table))) ast.[(ast.Length - 1)] with
+                                                    | Error(msg) -> Error(msg)
+                                                    | ErrSome(tkn, SymbolTable(table)) ->
+                                                        ErrSome(tkn, SymbolTable(Map.filter (fun _ (_, purge) -> not purge) table))
+                                                , false))
                                             )
                                         )
-                    )
+                    , false)
                 );
             ]
         )
