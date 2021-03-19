@@ -2,7 +2,7 @@
     (define grej counter thing (
         if (== (counter ()) 0)
             (print WeDoneHere)
-            (->
+            (-> //Voilla, comment!!!!!
                 (print (thing ()))
                 (grej (- (counter ()) 1) ojoj)
             )
