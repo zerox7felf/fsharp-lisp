@@ -1,5 +1,24 @@
 (->
-    // h
-    (+ 1 2)
-    (print hejsan)
+    (define pang cond (->
+        (define pong (
+            print HejsanFromPong
+        ))
+        // (if (cond()) (
+        //     pang
+        // )(
+        //     hej
+        // ))
+        (pong)
+    ))
+
+    (define hej (->
+        (12)
+    ))
+
+    // ((pang false)())
+    (pang false)
+
+    // ((pang false)())
+
+    (hej())
 )

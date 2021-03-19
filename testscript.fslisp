@@ -1,12 +1,9 @@
 (->
-    (define grej counter thing (
-        if (== (counter ()) 0)
-            (print WeDoneHere)
-            (-> //Voilla, comment!!!!!
-                (print (thing ()))
-                (grej (- (counter ()) 1) ojoj)
-            )
+    (let hej (
+        ($ arg1 arg2 (
+            print (arg1()) (arg2())
+        ))
     ))
-    (grej 9 Hejsan)
-    (print (counter ()))
+
+    ((hej()) haha hoho)
 )

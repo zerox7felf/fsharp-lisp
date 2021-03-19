@@ -17,7 +17,8 @@ module FsLisp =
                 | Ident ident -> printf "%s%s\n" (String.replicate depth " ") ident
                 | Const(Bool boolean) -> printf "%s%s\n" (String.replicate depth " ") (if boolean then "true" else "false")
                 | Const(Int integer) -> printf "%s%s\n" (String.replicate depth " ") (string integer)
-                | Const(Void) -> printf "Void!\n"
+                | Const(Void) -> printf "Void\n"
+                | Func(func) -> printf "%A\n" func
             | Node(identifier, nodes) ->
                 astToString [identifier] depth
                 astToString nodes (depth + 4)
@@ -46,6 +47,7 @@ module FsLisp =
                     | ErrSome(token, genSymbols) ->
                         match token with
                         | Ident ident -> printfn "%A" token
+                        | Func func -> printfn "%A" token
                         | Const(Bool boolean) -> printfn "%A" boolean
                         | Const(Int integer) -> printfn "%d" integer
                         | Const(Void) -> printfn "Void"
@@ -71,6 +73,7 @@ module FsLisp =
                     printf "Return: "
                     match token with
                     | Ident ident -> printfn "%A" token
+                    | Func func -> printfn "%A" token
                     | Const(Bool boolean) -> printfn "%A" boolean
                     | Const(Int integer) -> printfn "%A" integer
                     | Const(Void) -> printfn "Void!"

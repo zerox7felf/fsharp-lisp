@@ -17,6 +17,12 @@ module Eval =
             ErrSome(value, (SymbolTable(symbols)))
         | Node (identExpr, nodeList) ->
             match eval (SymbolTable symbols) identExpr with
+            | ErrSome(Func(func), (SymbolTable symbols)) -> 
+                match func (nodeList) (SymbolTable symbols) with
+                | ErrSome result ->
+                    ErrSome(result)
+                | Error err ->
+                    Error(err)
             | ErrSome(Ident(ident), (SymbolTable symbols)) -> 
                 match symbols.TryFind (ident) with
                 | Some (symbol, _) ->
@@ -72,7 +78,7 @@ module Eval =
                 match eval table ast.[1] with
                 | ErrSome(right, _) ->
                     match (left, right) with
-                    | (left, right) ->
+                    | (Const(left), Const(right)) ->
                         ErrSome(Const(Bool(op left right)), table)
                     | _ ->
                         Error "Invalid types in relational arithmetic operation"
@@ -238,8 +244,10 @@ module Eval =
                                             printf "%A" value
                                         | Const(Void) ->
                                             printf "Void"
-                                        | Ident value ->
+                                        | Ident(value) ->
                                             printf "%s" value
+                                        | Func(value) ->
+                                            printf "%A" value
                                     | Error(err) -> ()
                                     if not (tail.IsEmpty) then
                                         printf " "
@@ -265,7 +273,48 @@ module Eval =
                     , false)
                 );
                 (
-                    "define",
+                    "$", // construct lambda
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        if ast.Length < 1 then
+                            Error("Missing argument for lambda definition")
+                        else
+                            let rec loop astList argList =
+                                match astList with
+                                | head :: tail ->
+                                    match eval table head with
+                                    | Error(msg) -> Error(msg)
+                                    | ErrSome(tkn, _) ->
+                                        match tkn with
+                                        | Ident argName ->
+                                            loop tail (argList@[(argName)])
+                                        | _ -> Error("Invalid token for specifying argument name")
+                                | _ -> ErrSome(argList)
+                            match loop (if ast.Length > 1 then ast.[..(ast.Length - 2)] else []) [] with
+                            | Error(msg) -> Error(msg)
+                            | ErrSome(args) ->
+                                ErrSome(
+                                    Func(
+                                        fun (localAst: AstNode list) (SymbolTable ogTable) ->
+                                            let rec loop argName argVal (SymbolTable table) =
+                                                match (argName, argVal) with
+                                                | (name :: nameTail, currVal :: valTail) ->
+                                                    loop nameTail valTail (
+                                                        SymbolTable(
+                                                            table.Add(name, (fun _ tbl ->
+                                                                eval (SymbolTable(table)) currVal
+                                                            , true))
+                                                        )
+                                                    )
+                                                | _ -> table
+                                            match eval (SymbolTable(loop args localAst (SymbolTable ogTable))) ast.[(ast.Length - 1)] with
+                                            | Error(msg) -> Error(msg)
+                                            | ErrSome(tkn, SymbolTable(table)) -> ErrSome(tkn, SymbolTable(ogTable))
+                                    ), table
+                                )
+                    , false)
+                );
+                (
+                    "let",
                     (fun (ast: AstNode list) (SymbolTable mainTable) -> 
                         if ast.Length < 2 then
                             Error("Missing arguments for function definition")
@@ -274,7 +323,6 @@ module Eval =
                             | Error(msg) -> Error(msg)
                             | ErrSome(tkn, SymbolTable table) ->
                                 match tkn with
-                                | Const(constant) -> Error("Attempt to use constant as function identifier")
                                 | Ident name ->
                                     let rec loop astList argList =
                                         match astList with
@@ -283,19 +331,17 @@ module Eval =
                                             | Error(msg) -> Error(msg)
                                             | ErrSome(tkn, _) ->
                                                 match tkn with
-                                                | Const(constant) -> Error("Attempt to use constant as function argument identifier")
                                                 | Ident argName ->
                                                     loop tail (argList@[(argName)])
+                                                | _ -> Error("Invalid token for specifying argument name")
                                         | _ -> ErrSome(argList)
                                     match loop (if ast.Length > 2 then ast.[1..(ast.Length - 2)] else []) [] with
                                     | Error(msg) -> Error(msg)
                                     | ErrSome(args) ->
-                                        //printfn "NAME:%A" name
-                                        //printfn "ARGS:%A" args
                                         ErrSome(
                                             Const(Void),
                                             SymbolTable(
-                                                table.Add(name, (fun (localAst: AstNode list) (SymbolTable table) ->
+                                                table.Add(name, (fun (localAst: AstNode list) (SymbolTable ogTable) ->
                                                     let rec loop argName argVal (SymbolTable table) =
                                                         match (argName, argVal) with
                                                         | (name :: nameTail, currVal :: valTail) ->
@@ -307,13 +353,13 @@ module Eval =
                                                                 )
                                                             )
                                                         | _ -> table
-                                                    match eval (SymbolTable(loop args localAst (SymbolTable table))) ast.[(ast.Length - 1)] with
+                                                    match eval (SymbolTable(loop args localAst (SymbolTable ogTable))) ast.[(ast.Length - 1)] with
                                                     | Error(msg) -> Error(msg)
-                                                    | ErrSome(tkn, SymbolTable(table)) ->
-                                                        ErrSome(tkn, SymbolTable(Map.filter (fun _ (_, purge) -> not purge) table))
-                                                , false))
+                                                    | ErrSome(tkn, SymbolTable(table)) -> ErrSome(tkn, SymbolTable(ogTable))
+                                                , true)) // TODO remove remove flags
                                             )
                                         )
+                                | _ -> Error("Invalid token for function name")
                     , false)
                 );
             ]

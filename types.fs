@@ -1,6 +1,6 @@
 namespace FsLisp
 
-module Types =
+module rec Types =
     type Error<'a> =
     | ErrSome of 'a
     | Error of string
@@ -15,6 +15,7 @@ module Types =
     type Token =
     | Const of Const
     | Ident of Ident
+    | Func of SymbolTableFunc
 
     type AstNode =
     | Empty
