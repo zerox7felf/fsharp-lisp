@@ -89,7 +89,7 @@ module Parser =
             | _ ->
                 ErrSome(Node(currArgs.[0], currArgs.[1..]))
 
-        printfn "%A" (input.Replace("\n", "\\n"))
+        //printfn "%A" (input.Replace("\n", "\\n"))
         if input = "" then
             (Error "Unexpected end of file", (index, line, col))
         else

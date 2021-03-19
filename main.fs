@@ -27,9 +27,30 @@ module FsLisp =
 
     [<EntryPoint>]
     let main args =
-        if args.Length <> 1 then
+        if args.Length > 1 then
             printfn "Usage: Main.exe <script file>"
+            printfn "   or: Main.exe"
             1
+        else if args.Length = 0 then
+            let rec loop symbols = 
+                printf ">"
+                match parse (System.Console.ReadLine()) symbols with
+                | (Error(msg), (_, line, col)) ->
+                    printf "Error: %s\n at line %d, col %d\n" msg line col
+                    loop symbols
+                | (ErrSome(ast, genSymbols), _) ->
+                    match eval genSymbols ast with
+                    | Error(msg) ->
+                        printf "Error: %s\n" msg
+                        loop symbols
+                    | ErrSome(token, genSymbols) ->
+                        match token with
+                        | Ident ident -> printfn "%A" token
+                        | Const(Bool boolean) -> printfn "%A" boolean
+                        | Const(Int integer) -> printfn "%d" integer
+                        | Const(Void) -> printfn "Void"
+                        loop genSymbols
+            loop stdSymbols
         else
             let input = File.ReadAllText(args.[0])
 

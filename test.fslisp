@@ -17,18 +17,22 @@
 		)
 	))
 
-	(define fib_sequence n count (
+	(define fib_sequence n count func (
 		(
 			if (< (n()) (count()))
 			(->
 				(print (Fib:) (fib (n())))
 				(fib_sequence (+ (n()) 1) (count()))
 			)
-			(
-				print We are done
+			(->
+				(print We are done)
+                ((func()) ())
 			)
 		)
 	))
 
-	(fib_sequence 1 14)
+    (define higher_order (
+        print Hejsan
+    ))
+	(fib_sequence 1 14 higher_order)
 )

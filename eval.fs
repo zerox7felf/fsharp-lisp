@@ -227,8 +227,8 @@ module Eval =
                                     match loop (if ast.Length > 2 then ast.[1..(ast.Length - 2)] else []) [] with
                                     | Error(msg) -> Error(msg)
                                     | ErrSome(args) ->
-                                        printfn "NAME:%A" name
-                                        printfn "ARGS:%A" args
+                                        //printfn "NAME:%A" name
+                                        //printfn "ARGS:%A" args
                                         ErrSome(
                                             Const(Void),
                                             SymbolTable(
