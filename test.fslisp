@@ -1,0 +1,34 @@
+(->
+	(define fib n (->
+		(
+			if (== 0 (n()))
+			(
+				n()
+			)
+			(
+				if (== 1 (n()))
+				(
+					n()
+				)
+				(
+					+ (fib(- (n()) 1)) (fib(- (n()) 2))
+				)
+			)
+		)
+	))
+
+	(define fib_sequence n count (
+		(
+			if (< (n()) (count()))
+			(->
+				(print (Fib:) (fib (n())))
+				(fib_sequence (+ (n()) 1) (count()))
+			)
+			(
+				print We are done
+			)
+		)
+	))
+
+	(fib_sequence 1 14)
+)

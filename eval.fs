@@ -159,23 +159,33 @@ module Eval =
                     "print",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
                         let num_args = ast.Length
-                        if num_args <> 1 then
+                        if num_args < 1 then
                             Error "Invalid number of arguments"
                         else
-                            match (eval table ast.[0]) with
-                            | ErrSome(result, table) ->
-                                match result with
-                                | Const(Bool(value)) ->
-                                    printf "%A\n" value
-                                | Const(Int(value)) ->
-                                    printf "%A\n" value
-                                | Const(Void) ->
-                                    printf "Void\n"
-                                | Ident value ->
-                                    printf "%A\n" value
-                                ErrSome(result, table)
-                            | Error(err) ->
-                                Error(err)
+                            let rec iterateArgs (SymbolTable symbols) (seq: AstNode list) (lastValue: Error<Token * SymbolTable>) : Error<Token * SymbolTable> =
+                                match seq with
+                                | head :: tail ->
+                                    let result = (eval (SymbolTable(symbols)) (head))
+                                    match result with
+                                    | ErrSome(result, table) ->
+                                        match result with
+                                        | Const(Bool(value)) ->
+                                            printf "%A" value
+                                        | Const(Int(value)) ->
+                                            printf "%A" value
+                                        | Const(Void) ->
+                                            printf "Void"
+                                        | Ident value ->
+                                            printf "%s" value
+                                    | Error(err) -> ()
+                                    if not (tail.IsEmpty) then
+                                        printf " "
+                                    iterateArgs (SymbolTable symbols) (tail) (result)
+                                | _ ->
+                                    lastValue
+                            iterateArgs (table) (ast) (ErrSome(Const(Void), table)) |> ignore
+                            printf "\n"
+                            ErrSome(Const(Void), table)
                     )
                 );
                 (

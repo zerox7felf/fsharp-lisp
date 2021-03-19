@@ -6,4 +6,5 @@ Main.exe: main.fs types.fs parser.fs eval.fs
 	fsharpc --out:Main.exe types.fs parser.fs eval.fs main.fs
 
 run: Main.exe
-	mono Main.exe testscript.fslisp
+	mono Main.exe test.fslisp
+# mono Main.exe testscript.fslisp
