@@ -324,41 +324,14 @@ module Eval =
                             | ErrSome(tkn, SymbolTable table) ->
                                 match tkn with
                                 | Ident name ->
-                                    let rec loop astList argList =
-                                        match astList with
-                                        | head :: tail ->
-                                            match eval (SymbolTable table) head with
-                                            | Error(msg) -> Error(msg)
-                                            | ErrSome(tkn, _) ->
-                                                match tkn with
-                                                | Ident argName ->
-                                                    loop tail (argList@[(argName)])
-                                                | _ -> Error("Invalid token for specifying argument name")
-                                        | _ -> ErrSome(argList)
-                                    match loop (if ast.Length > 2 then ast.[1..(ast.Length - 2)] else []) [] with
-                                    | Error(msg) -> Error(msg)
-                                    | ErrSome(args) ->
-                                        ErrSome(
-                                            Const(Void),
-                                            SymbolTable(
-                                                table.Add(name, (fun (localAst: AstNode list) (SymbolTable ogTable) ->
-                                                    let rec loop argName argVal (SymbolTable table) =
-                                                        match (argName, argVal) with
-                                                        | (name :: nameTail, currVal :: valTail) ->
-                                                            loop nameTail valTail (
-                                                                SymbolTable(
-                                                                    table.Add(name, (fun _ tbl ->
-                                                                        eval (SymbolTable(table)) currVal
-                                                                    , true))
-                                                                )
-                                                            )
-                                                        | _ -> table
-                                                    match eval (SymbolTable(loop args localAst (SymbolTable ogTable))) ast.[(ast.Length - 1)] with
-                                                    | Error(msg) -> Error(msg)
-                                                    | ErrSome(tkn, SymbolTable(table)) -> ErrSome(tkn, SymbolTable(ogTable))
-                                                , true)) // TODO remove remove flags
-                                            )
+                                    ErrSome(
+                                        Const(Void),
+                                        SymbolTable(
+                                            table.Add(name, (fun (localAst: AstNode list) (SymbolTable ogTable) ->
+                                                eval (SymbolTable(table)) ast.[ast.Length-1]
+                                            , true)) // TODO remove remove flags
                                         )
+                                    )
                                 | _ -> Error("Invalid token for function name")
                     , false)
                 );

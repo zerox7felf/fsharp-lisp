@@ -6,4 +6,10 @@
     ))
 
     ((hej()) haha hoho)
+
+    (let hoj ($ arg1 arg2 (
+        print (arg1()) (arg2())
+    )))
+
+    ((hoj()) hejsan hoppsan)
 )
