@@ -33,7 +33,7 @@ module FsLisp =
             1
         else if args.Length = 0 then
             let rec loop symbols = 
-                printf ">"
+                printf "> "
                 match parse (System.Console.ReadLine()) symbols with
                 | (Error(msg), (_, line, col)) ->
                     printf "Error: %s\n at line %d, col %d\n" msg line col

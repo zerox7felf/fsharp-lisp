@@ -1,5 +1,5 @@
 (->
-	(define fib n (->
+	(define fib n (
 		(
 			if (== 0 (n()))
 			(

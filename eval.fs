@@ -79,6 +79,48 @@ module Eval =
                 | Error(msg) -> Error(msg)
             | Error(msg) -> Error(msg)
 
+    let boolArith (ast: AstNode list) (table: SymbolTable) (op) =
+        if not (ast.Length = 2) then
+            Error "Invalid number of arguments in boolean arithmetic operation"
+        else
+            match eval table ast.[0] with
+            | ErrSome(left, _) ->
+                match eval table ast.[1] with
+                | ErrSome(right, _) ->
+                    match (left, right) with
+                    | (Const(Bool(left)), Const(Bool(right))) ->
+                        ErrSome(Const(Bool(op left right)), table)
+                    | _ ->
+                        Error "Invalid types in boolean arithmetic operation"
+                | Error(msg) -> Error(msg)
+            | Error(msg) -> Error(msg)
+
+    let unaryRelArith (ast: AstNode list) (table: SymbolTable) (op) =
+        if not (ast.Length = 1) then
+            Error "Invalid number of arguments in unary arithmetic operation"
+        else
+            match eval table ast.[0] with
+            | ErrSome(value, _) ->
+                match value with
+                | Const(Bool(value)) ->
+                    ErrSome(Const(Bool(op value)), table)
+                | _ ->
+                    Error "Invalid value type in unary operation"
+            | Error(msg) -> Error(msg)
+
+    let unaryArith (ast: AstNode list) (table: SymbolTable) (op) =
+        if not (ast.Length = 1) then
+            Error "Invalid number of arguments in unary arithmetic operation"
+        else
+            match eval table ast.[0] with
+            | ErrSome(value, _) ->
+                match value with
+                | Const(Int(value)) ->
+                    ErrSome(Const(Int(op value)), table)
+                | _ ->
+                    Error "Invalid value type in unary operation"
+            | Error(msg) -> Error(msg)
+
     let stdSymbols : SymbolTable =
         SymbolTable(
             Map.ofList [
@@ -91,7 +133,10 @@ module Eval =
                 (
                     "-",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
-                        opArith ast table (-)
+                        if ast.Length = 1 then
+                            unaryArith ast table (~-)
+                        else
+                            opArith ast table (-)
                     , false)
                 );
                 (
@@ -122,6 +167,24 @@ module Eval =
                     ">",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
                         relationalArith ast table (>)
+                    , false)
+                );
+                (
+                    "and",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        boolArith ast table (&&)
+                    , false)
+                );
+                (
+                    "or",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        boolArith ast table (||)
+                    , false)
+                );
+                (
+                    "not",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        unaryRelArith ast table (not)
                     , false)
                 );
                 (
