@@ -1,6 +1,6 @@
 (->
-    (define pang cond (->
-        (define pong (
+    (let pang cond (->
+        (let pong (
             print HejsanFromPong
         ))
         // (if (cond()) (
@@ -11,7 +11,7 @@
         (pong)
     ))
 
-    (define hej (->
+    (let hej (->
         (12)
     ))
 

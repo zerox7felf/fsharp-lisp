@@ -6,54 +6,23 @@ namespace FsLisp
 open Types
 
 module Eval =
-
-    let areSame = LanguagePrimitives.PhysicalEquality // Equality comparison for functions
-
-    let rec eval (SymbolTable symbols) (ast: AstNode) : Error<Token * SymbolTable> =
+    let rec eval (SymbolTable symbols) (ast: AstNode) : Error<ValueToken * SymbolTable> =
         match ast with
-        | Empty ->
-            ErrSome(Const(Void), (SymbolTable(symbols)))
+        | Empty -> ErrSome(Const(Void), SymbolTable(symbols))
         | Value value ->
-            ErrSome(value, (SymbolTable(symbols)))
-        | Node (identExpr, nodeList) ->
+            match value with
+            | Ident ident ->
+                match symbols.TryFind ident with
+                | Some (symbol, _) -> ErrSome(Func(symbol), SymbolTable(symbols))
+                | None -> Error("Symbol " + ident + " was not found")
+            | ValueToken value -> ErrSome(value, SymbolTable(symbols))
+        | Node(identExpr, nodeList) ->
             match eval (SymbolTable symbols) identExpr with
-            | ErrSome(Func(func), (SymbolTable symbols)) -> 
-                match func (nodeList) (SymbolTable symbols) with
-                | ErrSome result ->
-                    ErrSome(result)
-                | Error err ->
-                    Error(err)
-            | ErrSome(Ident(ident), (SymbolTable symbols)) -> 
-                match symbols.TryFind (ident) with
-                | Some (symbol, _) ->
-                    // printf "Symbol ('%s'): %A\n" ident symbol
-                    match symbol (nodeList) (SymbolTable symbols) with
-                    | ErrSome result ->
-                        ErrSome(result)
-                    | Error err ->
-                        Error(err)
-                | None ->
-                    Error("Symbol " + ident + " was not found")
             | Error(msg) -> Error(msg)
-            | ErrSome(Const(constant), _) ->
-                Error(
-                    "Attempt to use " + (
-                        match constant with
-                        | Bool boolean -> "boolean (" + (if boolean then "true" else "false") + ")"
-                        | Int integer -> "integer (" + (string integer) + ")"
-                        | Void -> "void"
-                    ) + " as function identifier"
-                )
-        //| Seq seq ->
-        //    let rec iterateSequence (SymbolTable symbols) (seq: AstNode list) (lastValue: Error<Token>) : Error<Token> =
-        //        match seq with
-        //        | head :: tail ->
-        //            iterateSequence (SymbolTable symbols) (tail) (eval (SymbolTable(symbols)) (head))
-        //        | _ ->
-        //            lastValue
-        //    iterateSequence (SymbolTable symbols) (seq) (ErrSome(Const(Void)))
+            | ErrSome(Const(constant), _) -> Error("Attempt to use " + constant.ToString() + " as function")
+            | ErrSome(Func(func), _) -> func nodeList (SymbolTable symbols) 
 
-    let opArith (ast: AstNode list) (table: SymbolTable) (op) : Error<Token * SymbolTable> =
+    let opArith (ast: AstNode list) (table: SymbolTable) (op) : Error<ValueToken * SymbolTable> =
         if not (ast.Length = 2) then
             Error "Invalid number of arguments in arithmetic operation"
         else
@@ -221,33 +190,19 @@ module Eval =
                     , false)
                 );
                 (
-                    "test",
-                    ((fun (ast: AstNode list) (table: SymbolTable) -> Error "Not implemented!"), false)
-                );
-                (
                     "print",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
                         let num_args = ast.Length
                         if num_args < 1 then
                             Error "Invalid number of arguments"
                         else
-                            let rec iterateArgs (SymbolTable symbols) (seq: AstNode list) (lastValue: Error<Token * SymbolTable>) : Error<Token * SymbolTable> =
+                            let rec iterateArgs (SymbolTable symbols) (seq: AstNode list) (lastValue: Error<ValueToken * SymbolTable>) : Error<ValueToken * SymbolTable> =
                                 match seq with
                                 | head :: tail ->
                                     let result = (eval (SymbolTable(symbols)) (head))
                                     match result with
                                     | ErrSome(result, table) ->
-                                        match result with
-                                        | Const(Bool(value)) ->
-                                            printf "%A" value
-                                        | Const(Int(value)) ->
-                                            printf "%A" value
-                                        | Const(Void) ->
-                                            printf "Void"
-                                        | Ident(value) ->
-                                            printf "%s" value
-                                        | Func(value) ->
-                                            printf "%A" value
+                                        printf "%s" (result.ToString())
                                     | Error(err) -> ()
                                     if not (tail.IsEmpty) then
                                         printf " "
@@ -278,17 +233,17 @@ module Eval =
                         if ast.Length < 1 then
                             Error("Missing argument for lambda definition")
                         else
-                            let rec loop astList argList =
-                                match astList with
-                                | head :: tail ->
-                                    match eval table head with
-                                    | Error(msg) -> Error(msg)
-                                    | ErrSome(tkn, _) ->
-                                        match tkn with
-                                        | Ident argName ->
-                                            loop tail (argList@[(argName)])
-                                        | _ -> Error("Invalid token for specifying argument name")
-                                | _ -> ErrSome(argList)
+                            let rec loop astList argList = ErrSome([])
+                                // match astList with
+                                // | head :: tail ->
+                                //     match eval table head with
+                                //     | Error(msg) -> Error(msg)
+                                //     | ErrSome(tkn, _) ->
+                                //         match tkn with
+                                //         | Ident argName ->
+                                //             loop tail (argList@[(argName)])
+                                //         | _ -> Error("Invalid token for specifying argument name")
+                                // | _ -> ErrSome(argList)
                             match loop (if ast.Length > 1 then ast.[..(ast.Length - 2)] else []) [] with
                             | Error(msg) -> Error(msg)
                             | ErrSome(args) ->
@@ -316,48 +271,24 @@ module Eval =
                 (
                     "let",
                     (fun (ast: AstNode list) (SymbolTable mainTable) -> 
-                        if ast.Length < 2 then
+                        // if ast.Length < 2 then
                             Error("Missing arguments for function definition")
-                        else
-                            match eval (SymbolTable mainTable) ast.[0] with
-                            | Error(msg) -> Error(msg)
-                            | ErrSome(tkn, SymbolTable table) ->
-                                match tkn with
-                                | Ident name ->
-                                    ErrSome(
-                                        Const(Void),
-                                        SymbolTable(
-                                            table.Add(name, (fun (localAst: AstNode list) (SymbolTable ogTable) ->
-                                                eval (SymbolTable(table)) ast.[ast.Length-1]
-                                            , true)) // TODO remove remove flags
-                                        )
-                                    )
-                                | _ -> Error("Invalid token for function name")
+                        // else
+                        //     match eval (SymbolTable mainTable) ast.[0] with
+                        //     | Error(msg) -> Error(msg)
+                        //     | ErrSome(tkn, SymbolTable table) ->
+                        //         match tkn with
+                        //         | Ident name ->
+                        //             ErrSome(
+                        //                 Const(Void),
+                        //                 SymbolTable(
+                        //                     table.Add(name, (fun (localAst: AstNode list) (SymbolTable ogTable) ->
+                        //                         eval (SymbolTable(table)) ast.[ast.Length-1]
+                        //                     , true)) // TODO remove remove flags
+                        //                 )
+                        //             )
+                        //         | _ -> Error("Invalid token for function name")
                     , false)
                 );
             ]
         )
-
-    let evalRun() =
-        let ast =
-            Node(
-                Value(Ident("if")),
-                [
-                    Node(
-                        Value(Ident("if")),
-                        [
-                            Value(Const(Bool(false)));
-                            Value(Const(Bool(true)));
-                        ]
-                    );
-                    Value(Const(Int(5)));
-                    Value(Const(Int(7)));
-                ]
-            )
-
-        let result = eval stdSymbols ast
-        match result with
-        | Error(err) ->
-            printf "Runtime error: %s\n" err
-        | _ ->
-            printf "Result: %A\n" result

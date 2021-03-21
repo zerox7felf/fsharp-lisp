@@ -9,19 +9,22 @@ module rec Types =
     | Bool of bool
     | Int of int
     | Void
+    | Str of string
 
     type Ident = string
+
+    type ValueToken = 
+    | Const of Const
+    | Func of SymbolTableFunc
     
     type Token =
-    | Const of Const
     | Ident of Ident
-    | Func of SymbolTableFunc
+    | ValueToken of ValueToken
 
     type AstNode =
     | Empty
     | Value of Token
     | Node of (AstNode * AstNode list)
-    //| Seq of AstNode list
 
-    type SymbolTableFunc = AstNode list -> SymbolTable -> Error<Token * SymbolTable>
+    type SymbolTableFunc = AstNode list -> SymbolTable -> Error<ValueToken * SymbolTable>
     and SymbolTable = SymbolTable of Map<Ident, (SymbolTableFunc * bool)>

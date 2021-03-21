@@ -44,7 +44,7 @@ module Parser =
                         int(Char.GetNumericValue(head))
                     ) * (pown 10 pos)
                 ) tail (pos + 1)
-            | _ -> AstNode(Value(Const(Int(number))))
+            | _ -> AstNode(Value(ValueToken(Const(Int(number)))))
 
         // Parse a number and add it to the list of parsedSubexpressions, which is then passed on for parsing the rest of the expression
         let rec parseNumber input (index, line, col) numberBuf parserState =
@@ -86,11 +86,43 @@ module Parser =
                 | _ ->
                     parseComment input.[1..] (index+1,line,col+1) parserState
 
+        // Parse string
+        let rec parseString input (index, line, col) currString parserState = 
+            if input = "" then
+                (Error("Unexpected end of file"), (index, line, col))
+            else
+                match input.[0] with
+                | '"' ->
+                    let (symbolTable, parsedSubexpressions, _) = parserState
+                    parser input.[1..] (index+1, line, col+1)
+                        (ParserState(
+                            symbolTable,
+                            (parsedSubexpressions@[
+                                AstNode(Value(ValueToken(Const(Str(currString)))))
+                            ]),""
+                        ))
+                | '\n' -> parseString input.[1..] (index+1, line+1, col) (currString + (string '\n')) parserState
+                | '\\' ->
+                    if input.[1..] = "" then
+                        (Error("Unexpected end of file"), (index, line, col))
+                    else
+                        parseString input.[1..] (index+2, line, col+2) 
+                            (currString + (
+                                match input.[1] with
+                                | '"' -> "\""
+                                | '\\' -> "\\"
+                                | 'n' -> "\n"
+                                | 't' -> "\t"
+                                | ch -> string ch
+                            )
+                        ) parserState
+                | ch -> parseString input.[1..] (index+1, line, col+1) (currString + (string ch)) parserState
+
         // Turn string into token
         let makeToken word : Token = 
             match word with
-            | "true" -> Const(Bool true)
-            | "false" -> Const(Bool false)
+            | "true" -> ValueToken(Const(Bool true))
+            | "false" -> ValueToken(Const(Bool false))
             | _ -> Ident word
 
         // Turn list of ExpressionParts into AstNode
@@ -161,6 +193,12 @@ module Parser =
                             (parsedSubexpressions@[Token(makeToken currWord)]),
                             ""
                         ))
+            | '"' ->
+                // String
+                if currWord = "" then
+                    parseString input.[1..] (index+1, line, col+1) "" currState
+                else
+                    (Error("Unexpected \" in middle of token"), (index+1, line, col+1))
             | _ ->
                 // Other token (either keyword or identifier)
                 parser input.[1..] (index+1, line, col+1) 
