@@ -25,42 +25,75 @@ module FsLisp =
 
     [<EntryPoint>]
     let main args =
-        if args.Length > 1 then
-            printfn "Usage: Main.exe <script file>"
-            printfn "   or: Main.exe"
+        let files = Array.filter (fun (arg: string) -> arg.[0] <> '-') args
+        let options = Array.filter (fun (arg: string) -> arg.[0] = '-') args
+        let argSet =
+            Set.ofList (
+                List.fold (
+                    fun newArgs (arg:string) ->
+                        if arg.Length >= 2 && arg.[0] = '-' && arg.[1] <> '-' then
+                            List.append newArgs (
+                                List.fold (
+                                    fun strArr ch -> (string ch)::strArr
+                                ) [] (Seq.toList arg.[1..])
+                            )
+                        else if arg.Length >= 3 then
+                            (arg.[2..] :: newArgs)
+                        else newArgs
+                ) [] (Array.toList options)
+            )
+        if (argSet.Contains("h")) || (argSet.Contains("help")) then
+            printfn "Usage: FsLisp.exe [options] <script files>"
+            printfn "   or: FsLisp.exe [options]\n"
+            printfn "Options:"
+            printfn "   -h, --help      :   This information"
+            printfn "   -a, --ast       :   Show parsed ast"
+            printfn "   -d, --debug-ast :   Show raw data from parser"
             1
-        else if args.Length = 0 then
+        else if files.Length = 0 then
+            printfn "FsLisp REPL"
+            printfn "Type FsLisp.exe -h for help"
             let rec loop symbols = 
                 printf "> "
-                match parse (System.Console.ReadLine()) symbols with
+
+                let input =
+                    let line = System.Console.ReadLine()
+                    if line = "" then ""
+                    else line.[..(line.Length-1)]
+
+                match parse input symbols with
                 | (Error(msg), (_, line, col)) ->
-                    printf "Error: %s\n at line %d, col %d\n" msg line col
+                    printfn "Error: %s\n at line %d, col %d" msg (line+1) (col+1)
                     loop symbols
                 | (ErrSome(ast, genSymbols), _) ->
+                    if argSet.Contains("a") || argSet.Contains("ast") then
+                        printfn "Ast:"
+                        astToString [ast] 0
+                    if argSet.Contains("d") || argSet.Contains("debug-ast") then
+                        printfn "Ast data: %A" ast
                     match eval genSymbols ast with
                     | Error(msg) ->
-                        printf "Error: %s\n" msg
+                        printfn "Error: %s" msg
                         loop symbols
                     | ErrSome(token, genSymbols) ->
                         printfn "%s" (token.ToString())
                         loop genSymbols
             loop stdSymbols
         else
-            let input = File.ReadAllText(args.[0])
-
-            printfn "Expression:\n%A" input
-
-            let result = parse input stdSymbols
-            printfn "Return value from parse:\n%A" result
-
-            match result with
-            | (Error msg, (index, line, col)) ->
-                printfn "Ajdå."
-            | (ErrSome (ast, _), (index, line, col)) ->
-                printfn "Generated Ast:\n%A" ast
-                astToString [ast] 0
-                match eval stdSymbols ast with
-                | Error msg -> printfn "Ajdå. \n%A" msg
-                | ErrSome(token, _) ->
-                    printf "Return: %s" (token.ToString())
+            Array.iter (fun file ->
+                let input = File.ReadAllText(file)
+                match parse input stdSymbols with
+                | (Error msg, (index, line, col)) ->
+                    printfn "Error: %s\n at line %d, col %d" msg (line+1) (col+1)
+                | (ErrSome (ast, _), (index, line, col)) ->
+                    if argSet.Contains("a") || argSet.Contains("ast") then
+                        printfn "Ast:"
+                        astToString [ast] 0
+                    if argSet.Contains("d") || argSet.Contains("debug-ast") then
+                        printfn "Ast data: %A" ast
+                    match eval stdSymbols ast with
+                    | Error msg -> printfn "Error: %s" msg
+                    | ErrSome(token, _) ->
+                        printfn "%s" (token.ToString())
+            ) files
             0

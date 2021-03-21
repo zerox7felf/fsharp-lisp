@@ -172,10 +172,10 @@ module Parser =
                 match parser input.[1..] (index+1, line, col+1) (ParserState((SymbolTable symbolTable), [], "")) with
                 | (Error msg, (newIndex, newLine, newCol)) -> (Error msg, (newIndex, line, col))
                 | (ErrSome (astNode, newSymbolTable), (newIndex, newLine, newCol)) ->
-                    if (1+newIndex-index) > input.Length then
+                    if (newIndex-index) > input.Length then
                         (Error "Unexpected end of file", (index, line, col))
                     else
-                        parser input.[(1+newIndex-index)..] (newIndex+1, newLine, newCol)
+                        parser input.[(1+newIndex-index)..] (newIndex, newLine, newCol)
                             (ParserState(
                                 newSymbolTable,
                                 (
@@ -194,8 +194,8 @@ module Parser =
                         else
                             (parsedSubexpressions@[Token(makeToken currWord)])
                     ) [] with
-                | ErrSome astNode -> (ErrSome(astNode, SymbolTable symbolTable), (index, line, col))
-                | Error msg -> (Error msg, (index, line, col))
+                | ErrSome astNode -> (ErrSome(astNode, SymbolTable symbolTable), (index+1, line, col+1))
+                | Error msg -> (Error msg, (index+1, line, col+1))
             | '/' ->
                 // Comment (or just a /, let parseComment decide.)
                 parseComment input (index, line, col) currState
@@ -232,7 +232,7 @@ module Parser =
             match parser input.[1..] (0,0,0) (ParserState(symbolTable, [], "")) with
             | (Error(_),_) as err -> err
             | (ErrSome(_), (index, line, col)) as result ->
-                if input.Length > index then
+                if (input.Length - 1) > index then
                     warn "Ignored trailing text after expression" (index, line, col)
                 result
         else
