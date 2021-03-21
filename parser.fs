@@ -31,7 +31,7 @@ module Parser =
             else
                 match input.[0] with
                 | '\n' -> parseWhiteSpace input.[1..] (index+1, line+1, 0) parserState
-                | ' ' | '\n' | '\t' ->
+                | ' ' | '\t' ->
                     parseWhiteSpace input.[1..] (index+1, line, col+1) parserState
                 | _ -> parser input (index, line, col) parserState
 
@@ -159,6 +159,8 @@ module Parser =
                 | _ ->
                     ErrSome(Node(currArgs.[0], currArgs.[1..]))
 
+        //printfn "---------------------------\n%s" input
+        //printfn "line:%d, col:%d, index:%d" line col index
         if input = "" then
             (Error "Unexpected end of file", (index, line, col))
         else
@@ -170,12 +172,12 @@ module Parser =
             | '(' ->
                 // Subexpression
                 match parser input.[1..] (index+1, line, col+1) (ParserState((SymbolTable symbolTable), [], "")) with
-                | (Error msg, (newIndex, newLine, newCol)) -> (Error msg, (newIndex, line, col))
+                | (Error msg, pos) -> (Error msg, pos)
                 | (ErrSome (astNode, newSymbolTable), (newIndex, newLine, newCol)) ->
-                    if (newIndex-index) > input.Length then
+                    if (1+newIndex-index) > input.Length then
                         (Error "Unexpected end of file", (index, line, col))
                     else
-                        parser input.[(1+newIndex-index)..] (newIndex, newLine, newCol)
+                        parser input.[(1+newIndex-index)..] (newIndex+1, newLine, newCol+1)
                             (ParserState(
                                 newSymbolTable,
                                 (
@@ -194,17 +196,22 @@ module Parser =
                         else
                             (parsedSubexpressions@[Token(makeToken currWord)])
                     ) [] with
-                | ErrSome astNode -> (ErrSome(astNode, SymbolTable symbolTable), (index+1, line, col+1))
-                | Error msg -> (Error msg, (index+1, line, col+1))
+                | ErrSome astNode -> (ErrSome(astNode, SymbolTable symbolTable), (index, line, col))
+                | Error msg -> (Error msg, (index, line, col))
             | '/' ->
                 // Comment (or just a /, let parseComment decide.)
                 parseComment input (index, line, col) currState
             | ' ' | '\t' | '\n' ->
                 // End of word
+                let (newIndex, newLine, newCol) =
+                    if input.[0] = '\n' then
+                        (index+1, line+1, col)
+                    else
+                        (index+1, line, col+1)
                 if currWord = "" then
                     parseWhiteSpace input (index, line, col) currState
                 else
-                    parseWhiteSpace input.[1..] (index+1, line, col+1)
+                    parseWhiteSpace input.[1..] (newIndex, newLine, newCol+1)
                         (ParserState(
                             (SymbolTable symbolTable),
                             (parsedSubexpressions@[Token(makeToken currWord)]),

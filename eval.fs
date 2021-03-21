@@ -290,7 +290,13 @@ module Eval =
                                         SymbolTable(
                                             table.Add(
                                                 name, (fun (localAst: AstNode list) (SymbolTable ogTable) ->
-                                                    eval (SymbolTable(ogTable)) ast.[ast.Length - 1]
+                                                    match eval (SymbolTable(ogTable)) ast.[ast.Length - 1] with
+                                                    | Error(msg) -> Error(msg)
+                                                    | ErrSome(Func(func), tbl) ->
+                                                        match eval tbl (Node(Value(ValueToken(Func(func))),[])) with
+                                                        | Error(msg) -> Error(msg)
+                                                        | ErrSome(_) as result -> result
+                                                    | result -> result
                                                 , true)
                                             )
                                         )

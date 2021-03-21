@@ -1,3 +1,6 @@
-($ (->
-    (print 12)
-))
+(->
+    (let "hejsan" ($
+        (print "halloj!")
+    ))
+    (hejsan)
+)
