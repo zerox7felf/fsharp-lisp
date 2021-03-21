@@ -5,6 +5,9 @@ module rec Types =
     | ErrSome of 'a
     | Error of string
 
+    let warn msg (_, line, col) =
+        printfn "Warning: %A (line %d, col %d)" msg (line+1) (col+1)
+
     type Const = 
     | Bool of bool
     | Int of int

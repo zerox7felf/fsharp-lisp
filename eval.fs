@@ -256,7 +256,13 @@ module Eval =
                                                     loop nameTail valTail (
                                                         SymbolTable(
                                                             table.Add(name, (fun _ tbl ->
-                                                                eval (SymbolTable(table)) currVal
+                                                                match eval (SymbolTable(table)) currVal with
+                                                                | Error(msg) -> Error(msg)
+                                                                | ErrSome(Func(func), tbl) ->
+                                                                    match eval tbl (Node(Value(ValueToken(Func(func))),[])) with
+                                                                    | Error(msg) -> Error(msg)
+                                                                    | ErrSome(_) as result -> result
+                                                                | result -> result
                                                             , true))
                                                         )
                                                     )

@@ -136,10 +136,14 @@ module Parser =
                     expressionListToAst tail (currArgs@[Value token])
             | _ when currArgs.Length = 0 ->
                 ErrSome(Empty)
-            | _ when currArgs.Length = 1 ->
-                ErrSome(currArgs.[0])
             | _ ->
-                ErrSome(Node(currArgs.[0], currArgs.[1..]))
+                match currArgs.[0] with
+                | Value(ValueToken(tkn)) when currArgs.Length > 1 ->
+                    Error("Attempt to use value as function: " + tkn.ToString())
+                | Value(ValueToken(_)) as tkn ->
+                    ErrSome(tkn)
+                | _ ->
+                    ErrSome(Node(currArgs.[0], currArgs.[1..]))
 
         if input = "" then
             (Error "Unexpected end of file", (index, line, col))
@@ -210,8 +214,13 @@ module Parser =
 
     let parse input symbolTable =
         if input = "" then
-            (Error "Unexpected end of file", (0,0,0))
+            (ErrSome(Empty, symbolTable), (0,0,0))
         else if input.[0] = '(' then
-            parser input.[1..] (0,0,0) (ParserState(symbolTable, [], ""))
+            match parser input.[1..] (0,0,0) (ParserState(symbolTable, [], "")) with
+            | (Error(_),_) as err -> err
+            | (ErrSome(_), (index, line, col)) as result ->
+                if input.Length > index then
+                    warn "Ignored trailing text after expression" (index, line, col)
+                result
         else
             (Error "Expected start of expression at beginning of file", (0,0,0))

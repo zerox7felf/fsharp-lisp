@@ -1,24 +1,84 @@
-(
-    ($ "hej" (
-        print (hej)
-    )) 12
+(->
+    (
+        ($ "hej" (
+            print (hej)
+        )) "this"
+    )
+
+	(
+		($ (print "hello from first function!"))
+	)
+
+    (
+        ($ "funcToRun" ( ->
+			(print "About to run second function!")
+			(funcToRun)
+		)) ($ (print "hello from second function!"))
+    )
 )
 
 Node(
-    Node(
-        Value (Ident "$"),
-        [
-            Value (ValueToken (Const (Str "hej")));
-            Node (
-                Value (Ident "print"),
-                [
-                    Value (Ident "hej")
-                ]
-            )
-        ]
-    ),
-    [
-        Value (ValueToken (Const (Int 12)))
-    ]
+	Value (Ident "->"),
+	[
+		Node(
+			Node(
+				Value (Ident "$"),
+				[
+					Value (ValueToken (Const (Str "hej")));
+					Node(
+						Value (Ident "print"),
+						[
+							Node(
+								Value (Ident "hej"), 
+								[]
+							)
+						]
+					)
+				]
+			),
+			[
+				Value (ValueToken (Const (Str "this")))
+			]
+		);
+		Node(
+			Node(
+				Value (Ident "$"),
+				[
+					Value (ValueToken (Const (Str "funcToRun")));
+					Node(
+						Value (Ident "->"),
+						[
+							Node(
+								Value (Ident "print"),
+								[
+									Value (ValueToken (Const (Str "Now about to run function")))
+								]
+							);
+							Node(
+								Value (Ident "funcToRun"),
+								[]
+							)
+						]
+					)
+				]
+			),
+			[
+				Node(
+					Value (Ident "$"),
+					[
+						Node(
+							Node(
+								Value (Ident "print"),
+								[
+									Value (ValueToken (Const (Str "hello from function!")))
+								]
+							),
+							[]
+						)
+					]
+				)
+			]
+		)
+	]
 )
 
