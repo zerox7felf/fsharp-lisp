@@ -76,15 +76,29 @@ module Parser =
                     (Error("Unexpected character " + (string input.[0]) + " in number"),(index, line, col))
 
         // Parse comment
-        let rec parseComment input (index, line, col) parserState = 
+        let parseComment input (index, line, col) parserState = 
+            let rec loop input (index, line, col) parserState = 
+                if input = "" then
+                    parser input (index, line, col) parserState
+                else
+                    match input.[0] with
+                    | '\n' ->
+                        parser input (index, line, col) parserState
+                    | _ ->
+                        loop input.[1..] (index+1,line,col+1) parserState
             if input = "" then
                 parser input (index, line, col) parserState
+            else if input.[..1] = "//" then
+                loop input.[1..] (index+1, line, col+1) parserState
             else
-                match input.[0] with
-                | '\n' ->
-                    parser input (index, line, col) parserState
-                | _ ->
-                    parseComment input.[1..] (index+1,line,col+1) parserState
+                // Not a comment, only a single /. Return to parser with the / added to the word buffer.
+                let (symbolTable, parsedSubexpressions, currWord) = parserState
+                parser input.[1..] (index+1, line, col+1)
+                    (ParserState(
+                        symbolTable,
+                        parsedSubexpressions,
+                        (currWord + (string '/'))
+                    ))
 
         // Parse string
         let rec parseString input (index, line, col) currString parserState = 
@@ -106,14 +120,14 @@ module Parser =
                     if input.[1..] = "" then
                         (Error("Unexpected end of file"), (index, line, col))
                     else
-                        parseString input.[1..] (index+2, line, col+2) 
+                        parseString input.[2..] (index+2, line, col+2) 
                             (currString + (
                                 match input.[1] with
                                 | '"' -> "\""
                                 | '\\' -> "\\"
                                 | 'n' -> "\n"
                                 | 't' -> "\t"
-                                | ch -> string ch
+                                | ch -> "\\" + (string ch)
                             )
                         ) parserState
                 | ch -> parseString input.[1..] (index+1, line, col+1) (currString + (string ch)) parserState
@@ -182,14 +196,13 @@ module Parser =
                     ) [] with
                 | ErrSome astNode -> (ErrSome(astNode, SymbolTable symbolTable), (index, line, col))
                 | Error msg -> (Error msg, (index, line, col))
+            | '/' ->
+                // Comment (or just a /, let parseComment decide.)
+                parseComment input (index, line, col) currState
             | ' ' | '\t' | '\n' ->
                 // End of word
                 if currWord = "" then
                     parseWhiteSpace input (index, line, col) currState
-                else if currWord.Length >= 2 && currWord.[..1] = "//" then
-                    //Comment
-                    parseComment input (index, line, col) (ParserState((SymbolTable symbolTable), parsedSubexpressions, ""))
-                                                            // TODO: ^- this is cursed, can't replace with currState...
                 else
                     parseWhiteSpace input.[1..] (index+1, line, col+1)
                         (ParserState(
