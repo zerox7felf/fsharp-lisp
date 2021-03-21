@@ -277,23 +277,26 @@ module Eval =
                 (
                     "let",
                     (fun (ast: AstNode list) (SymbolTable mainTable) -> 
-                        // if ast.Length < 2 then
+                        if ast.Length < 2 then
                             Error("Missing arguments for function definition")
-                        // else
-                        //     match eval (SymbolTable mainTable) ast.[0] with
-                        //     | Error(msg) -> Error(msg)
-                        //     | ErrSome(tkn, SymbolTable table) ->
-                        //         match tkn with
-                        //         | Ident name ->
-                        //             ErrSome(
-                        //                 Const(Void),
-                        //                 SymbolTable(
-                        //                     table.Add(name, (fun (localAst: AstNode list) (SymbolTable ogTable) ->
-                        //                         eval (SymbolTable(table)) ast.[ast.Length-1]
-                        //                     , true)) // TODO remove remove flags
-                        //                 )
-                        //             )
-                        //         | _ -> Error("Invalid token for function name")
+                        else
+                            match eval (SymbolTable mainTable) ast.[0] with
+                            | Error(message) -> Error(message)
+                            | ErrSome(token, SymbolTable table) ->
+                                match token with
+                                | Const(Str(name)) ->
+                                    ErrSome(
+                                        Const(Void),
+                                        SymbolTable(
+                                            table.Add(
+                                                name, (fun (localAst: AstNode list) (SymbolTable ogTable) ->
+                                                    eval (SymbolTable(ogTable)) ast.[ast.Length - 1]
+                                                , true)
+                                            )
+                                        )
+                                    )
+                                | _ ->
+                                    Error("Invalid token for function name")
                     , false)
                 );
             ]
