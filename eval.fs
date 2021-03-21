@@ -233,17 +233,17 @@ module Eval =
                         if ast.Length < 1 then
                             Error("Missing argument for lambda definition")
                         else
-                            let rec loop astList argList = ErrSome([])
-                                // match astList with
-                                // | head :: tail ->
-                                //     match eval table head with
-                                //     | Error(msg) -> Error(msg)
-                                //     | ErrSome(tkn, _) ->
-                                //         match tkn with
-                                //         | Ident argName ->
-                                //             loop tail (argList@[(argName)])
-                                //         | _ -> Error("Invalid token for specifying argument name")
-                                // | _ -> ErrSome(argList)
+                            let rec loop astList argList = 
+                                match astList with
+                                | head :: tail ->
+                                    match eval table head with
+                                    | Error(msg) -> Error(msg)
+                                    | ErrSome(tkn, _) ->
+                                        match tkn with
+                                        | Const(Str(argName)) ->
+                                            loop tail (argList@[(argName)])
+                                        | tkn -> Error("Cannot use " + (tkn.ToString()) + " as argument name")
+                                | _ -> ErrSome(argList)
                             match loop (if ast.Length > 1 then ast.[..(ast.Length - 2)] else []) [] with
                             | Error(msg) -> Error(msg)
                             | ErrSome(args) ->

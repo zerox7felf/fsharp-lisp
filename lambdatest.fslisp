@@ -1,1 +1,24 @@
-("hejsan")
+(
+    ($ "hej" (
+        print (hej)
+    )) 12
+)
+
+Node(
+    Node(
+        Value (Ident "$"),
+        [
+            Value (ValueToken (Const (Str "hej")));
+            Node (
+                Value (Ident "print"),
+                [
+                    Value (Ident "hej")
+                ]
+            )
+        ]
+    ),
+    [
+        Value (ValueToken (Const (Int 12)))
+    ]
+)
+
