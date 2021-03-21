@@ -1,38 +1,48 @@
 (->
-	(define fib n (
-		(
-			if (== 0 (n()))
-			(
-				n()
-			)
-			(
-				if (== 1 (n()))
-				(
-					n()
-				)
-				(
-					+ (fib(- (n()) 1)) (fib(- (n()) 2))
-				)
-			)
+	(let "hello" (
+		($
+			("a")
 		)
 	))
-
-	(define fib_sequence n count func (
-		(
-			if (< (n()) (count()))
-			(->
-				(print (Fib:) (fib (n())))
-				(fib_sequence (+ (n()) 1) (count()))
-			)
-			(->
-				(print We are done)
-                ((func()) ())
-			)
-		)
-	))
-
-    (define higher_order (
-        print Hejsan
-    ))
-	(fib_sequence 1 14 higher_order)
+	(let (hello()) 5)
+	(a)
 )
+
+// (->
+// 	(define fib n (
+// 		(
+// 			if (== 0 (n()))
+// 			(
+// 				n()
+// 			)
+// 			(
+// 				if (== 1 (n()))
+// 				(
+// 					n()
+// 				)
+// 				(
+// 					+ (fib(- (n()) 1)) (fib(- (n()) 2))
+// 				)
+// 			)
+// 		)
+// 	))
+// 
+// 	(define fib_sequence n count func (
+// 		(
+// 			if (< (n()) (count()))
+// 			(->
+// 				(print (Fib:) (fib (n())))
+// 				(fib_sequence (+ (n()) 1) (count()))
+// 			)
+// 			(->
+// 				(print We are done)
+//                 ((func()) ())
+// 			)
+// 		)
+// 	))
+// 
+//     (define higher_order (
+//         print Hejsan
+//     ))
+// 	(fib_sequence 1 14 higher_order)
+// )
