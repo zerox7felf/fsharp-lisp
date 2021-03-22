@@ -22,7 +22,7 @@ module Eval =
             | ErrSome(Const(constant), _) -> Error("Attempt to use " + constant.ToString() + " as function")
             | ErrSome(Func(func), _) -> func nodeList (SymbolTable symbols) 
 
-    let opArith (ast: AstNode list) (table: SymbolTable) (op) : Error<ValueToken * SymbolTable> =
+    let opArith (ast: AstNode list) (table: SymbolTable) (op) (opName): Error<ValueToken * SymbolTable> =
         if not (ast.Length = 2) then
             Error "Invalid number of arguments in arithmetic operation"
         else
@@ -33,6 +33,8 @@ module Eval =
                     match (left, right) with
                     | (Const(Int(left)), Const(Int(right))) ->
                         ErrSome(Const(Int(op left right)), table)
+                    | (Const(Str(left)), Const(Str(right))) when opName = "+" ->
+                        ErrSome(Const(Str(left + right)), table)
                     | _ ->
                         Error "Invalid types in arithmetic operation"
                 | Error(msg) -> Error(msg)
@@ -96,13 +98,92 @@ module Eval =
                     Error "Invalid value type in unary operation"
             | Error(msg) -> Error(msg)
 
+    let isOfType arg typeName =
+        match typeName with
+        | "Func" ->
+            match arg with
+            | Func(_) -> true
+            | _ -> false
+        | "Bool" ->
+            match arg with
+            | Const(Bool(_)) -> true
+            | _ -> false
+        | "Int" ->
+            match arg with
+            | Const(Int(_)) -> true
+            | _ -> false
+        | "Str" ->
+            match arg with
+            | Const(Str(_)) -> true
+            | _ -> false
+        | "Void" ->
+            match arg with
+            | Const(Void) -> true
+            | _ -> false
+        | _ -> false
+
     let stdSymbols : SymbolTable =
         SymbolTable(
             Map.ofList [
+                (   "isFunc",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        if ast.Length > 1 then
+                            Error("Too many arguments to isFunc")
+                        else
+                            match eval table ast.[0] with
+                            | Error(msg) -> Error(msg)
+                            | ErrSome(result, _) ->
+                                ErrSome(Const(Bool(isOfType result "Func")), table)
+                    , false)
+                );
+                (   "isBool",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        if ast.Length > 1 then
+                            Error("Too many arguments to isBool")
+                        else
+                            match eval table ast.[0] with
+                            | Error(msg) -> Error(msg)
+                            | ErrSome(result, _) ->
+                                ErrSome(Const(Bool(isOfType result "Bool")), table)
+                    , false)
+                );
+                (   "isInt",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        if ast.Length > 1 then
+                            Error("Too many arguments to isInt")
+                        else
+                            match eval table ast.[0] with
+                            | Error(msg) -> Error(msg)
+                            | ErrSome(result, _) ->
+                                ErrSome(Const(Bool(isOfType result "Int")), table)
+                    , false)
+                );
+                (   "isStr",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        if ast.Length > 1 then
+                            Error("Too many arguments to isStr")
+                        else
+                            match eval table ast.[0] with
+                            | Error(msg) -> Error(msg)
+                            | ErrSome(result, _) ->
+                                ErrSome(Const(Bool(isOfType result "Str")), table)
+                    , false)
+                );
+                (   "isVoid",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        if ast.Length > 1 then
+                            Error("Too many arguments to isVoid")
+                        else
+                            match eval table ast.[0] with
+                            | Error(msg) -> Error(msg)
+                            | ErrSome(result, _) ->
+                                ErrSome(Const(Bool(isOfType result "Void")), table)
+                    , false)
+                );
                 (
                     "+",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
-                        opArith ast table (+)
+                        opArith ast table (+) "+"
                     , false)
                 );
                 (
@@ -111,23 +192,23 @@ module Eval =
                         if ast.Length = 1 then
                             unaryArith ast table (~-)
                         else
-                            opArith ast table (-)
+                            opArith ast table (-) "-"
                     , false)
                 );
                 (
                     "*",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
-                        opArith ast table (*)
+                        opArith ast table (*) "*"
                     , false)
                 );
                 (
                     "/",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
-                        opArith ast table (/)
+                        opArith ast table (/) "/"
                     , false)
                 );
                 (
-                    "==",
+                    "=",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
                         relationalArith ast table (=)
                     , false)
@@ -163,10 +244,6 @@ module Eval =
                     , false)
                 );
                 (
-                    // \--if
-                    //    \-- (cond)
-                    //    \-- (true-body)
-                    //    \-- (false-body)  -- optional
                     "if",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
                         let num_args = ast.Length
@@ -196,22 +273,48 @@ module Eval =
                         if num_args < 1 then
                             Error "Invalid number of arguments"
                         else
-                            let rec iterateArgs (SymbolTable symbols) (seq: AstNode list) (lastValue: Error<ValueToken * SymbolTable>) : Error<ValueToken * SymbolTable> =
+                            let rec iterateArgs (SymbolTable symbols) (seq: AstNode list): Error<ValueToken * SymbolTable> =
                                 match seq with
                                 | head :: tail ->
                                     let result = (eval (SymbolTable(symbols)) (head))
                                     match result with
-                                    | ErrSome(result, table) ->
-                                        printf "%s" (result.ToString())
-                                    | Error(err) -> ()
-                                    if not (tail.IsEmpty) then
-                                        printf " "
-                                    iterateArgs (SymbolTable symbols) (tail) (result)
+                                    | ErrSome(result, table) as wholeRes ->
+                                        match result with
+                                        | Func(func) -> printf "%A " func
+                                        | Const(Bool(cond)) -> printf "%s " (if cond then "true" else "false")
+                                        | Const(Int(integer)) -> printf "%d " integer
+                                        | Const(Str(str)) -> printf "%s " str
+                                        | Const(Void) -> printf "Void " 
+                                        iterateArgs (SymbolTable symbols) (tail)
+                                    | Error(err) -> Error(err)
                                 | _ ->
-                                    lastValue
-                            iterateArgs (table) (ast) (ErrSome(Const(Void), table)) |> ignore
-                            printf "\n"
-                            ErrSome(Const(Void), table)
+                                    printf "\n"
+                                    ErrSome(Const(Void), table)
+                            iterateArgs (table) (ast)
+                    , false)
+                );
+                (
+                    "debugPrint",
+                    (fun (ast: AstNode list) (table: SymbolTable) ->
+                        let num_args = ast.Length
+                        if num_args < 1 then
+                            Error "Invalid number of arguments"
+                        else
+                            let rec iterateArgs (SymbolTable symbols) (seq: AstNode list): Error<ValueToken * SymbolTable> =
+                                match seq with
+                                | head :: tail ->
+                                    let result = (eval (SymbolTable(symbols)) (head))
+                                    match result with
+                                    | ErrSome(result, table) as wholeRes ->
+                                        printf "%s" (result.ToString())
+                                        if not (tail.IsEmpty) then
+                                            printf " "
+                                        iterateArgs (SymbolTable symbols) (tail)
+                                    | Error(err) -> Error(err)
+                                | _ ->
+                                    printf "\n"
+                                    ErrSome(Const(Void), table)
+                            iterateArgs (table) (ast)
                     , false)
                 );
                 (
@@ -288,15 +391,15 @@ module Eval =
                                     ErrSome(
                                         Const(Void),
                                         SymbolTable(
-                                            table.Add(
+                                            mainTable.Add(
                                                 name, (fun (localAst: AstNode list) (SymbolTable ogTable) ->
                                                     match eval (SymbolTable(ogTable)) ast.[ast.Length - 1] with
                                                     | Error(msg) -> Error(msg)
-                                                    | ErrSome(Func(func), tbl) ->
-                                                        match eval tbl (Node(Value(ValueToken(Func(func))),[])) with
+                                                    | ErrSome(Func(func), _) ->
+                                                        match eval (SymbolTable(ogTable)) (Node(Value(ValueToken(Func(func))), localAst)) with
                                                         | Error(msg) -> Error(msg)
-                                                        | ErrSome(_) as result -> result
-                                                    | result -> result
+                                                        | ErrSome(result, _) -> ErrSome(result, SymbolTable(ogTable))
+                                                    | ErrSome(result, _) -> ErrSome(result, SymbolTable(ogTable))
                                                 , true)
                                             )
                                         )

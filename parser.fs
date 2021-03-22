@@ -239,7 +239,7 @@ module Parser =
             match parser input.[1..] (0,0,0) (ParserState(symbolTable, [], "")) with
             | (Error(_),_) as err -> err
             | (ErrSome(_), (index, line, col)) as result ->
-                if (input.Length - 1) > index then
+                if (input.Length - 2) > (index + 1) then
                     warn "Ignored trailing text after expression" (index, line, col)
                 result
         else
