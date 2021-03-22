@@ -247,7 +247,7 @@ module Eval =
                     "if",
                     (fun (ast: AstNode list) (table: SymbolTable) ->
                         let num_args = ast.Length
-                        if num_args < 2 then
+                        if num_args < 2 || num_args > 3 then
                             Error "Invalid number of arguments in 'if' function"
                         else
                             match eval table ast.[0] with
