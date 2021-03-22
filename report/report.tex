@@ -135,6 +135,9 @@
 	source code $\rightarrow$ lexical analysis/lexing $\rightarrow$ parsing $\rightarrow$ ast $\rightarrow$ evaluation of ast $\rightarrow$ result
 
 Briefly describe what we are trying to do. How did we implement everything? Which techniques and algorithms did we use, and how do they work?
+\newline
+\newline
+The FsLisp interpreter uses a recursive-descent parser to lexically analyze the source code and to then place the analyzed tokens into an abstract syntax tree. This syntax tree is then used by an evaluator which recursively translates identifiers into function values (given an initial scope in the form of a symbol table) and calls these functions with the sub-trees representing the arguments of the expression. It is then up to the individual functions to evaluate their arguments as needed.
 
 \subsection{Parser}
 
