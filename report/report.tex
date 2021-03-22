@@ -1,0 +1,90 @@
+\documentclass[11pt]{article}
+
+\title{DVA229 Project - Simple Interpreter}
+\author{Lucas Karlsson, Linus W. Monie}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{color, colortbl}
+\usepackage{xcolor}
+
+\graphicspath{ {./images/} }
+
+%% Math symbols
+\usepackage{amssymb}
+\def\ojoin{\setbox0=\hbox{$\bowtie$}%
+  \rule[-.02ex]{.25em}{.4pt}\llap{\rule[\ht0]{.25em}{.4pt}}}
+\def\leftouterjoin{\mathbin{\ojoin\mkern-5.8mu\bowtie}}
+\def\rightouterjoin{\mathbin{\bowtie\mkern-5.8mu\ojoin}}
+\def\fullouterjoin{\mathbin{\ojoin\mkern-5.8mu\bowtie\mkern-5.8mu\ojoin}}
+
+%% Code styling
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle} {
+	keywordstyle=\color{codepurple},
+	commentstyle=\color{codegray},
+	%% stringstyle=\color{codegreen},
+	basicstyle=\ttfamily\footnotesize,
+	tabsize=2,
+	showstringspaces=false,
+}
+
+\lstset{style=mystyle}
+
+%% Font settings
+\usepackage{helvet}
+\newenvironment{codetext}{\ttfamily\selectfont}{\par}
+
+%% Setup margins
+\usepackage[centering, margin={1in, 0.5in}, includeheadfoot]{geometry}
+\setlength{\topmargin}{0pt}
+\setlength{\headsep}{0pt}
+\setlength{\marginparsep}{11pt}
+
+\begin{document}
+
+\maketitle
+
+\section*{Introduction}
+	What we have done and how we did it.
+
+\section{Syntax}
+
+\begin{lstlisting}[language=lisp]
+
+(let "code go brrrr" "HAHA YES")
+
+\end{lstlisting}
+
+\section{Implementation}
+	source code $\rightarrow$ lexical analysis/lexing $\rightarrow$ parsing $\rightarrow$ ast $\rightarrow$ evaluation of ast $\rightarrow$ result
+
+Briefly describe what we are trying to do. How did we implement everything? Which techniques and algorithms did we use, and how do they work?
+
+\subsection{Parser}
+
+	\subsection{Lexical analysis}
+	\subsection{Tokens}
+	\subsection{Abstract syntax tree}
+
+\subsection{Evaluator}
+
+	\subsection{Token transformation}
+	\subsection{Functions}
+	\subsection{Types}
+	\subsection{Dynamic scoping}
+
+\section{User manual}
+
+\section{Interesting findings}
+
+\end{document}
