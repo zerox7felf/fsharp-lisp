@@ -55,7 +55,23 @@
 \maketitle
 
 \section*{Introduction}
-	What we have done and how we did it.
+    \begin{itemize}
+        \item “What have we done and how?”
+        \item Implemented an interpreter for a functional, lisp-esque language called FsLisp
+            \begin{itemize}
+                \item Prefix notation
+                \item Expression-based syntax using parenthesis
+            \end{itemize}
+        \item Dynamically scoped
+        \item Lazy evaluation
+            \begin{itemize}
+                \item Function arguments are not evaluated until the function needs them
+            \end{itemize}
+        \item Dynamically typed
+        \item We perform no static type checks, all type checking is optionally done in runtime (eg. though is(...) functions or operator definitions)
+        \item Higher-order functions and Lambda expressions
+    \end{itemize}
+
 
 \section{Syntax}
 
@@ -64,6 +80,56 @@
 (let "code go brrrr" "HAHA YES")
 
 \end{lstlisting}
+    
+    All syntax rules follow the expression syntax: (fun arg arg ...)
+    two paren. with a number of tokens. If there is more than one token, the first one will be evaluated with the others as arguments, otherwise the first token is evaluated and returned.
+    
+    \subsection{Tokens}
+        \begin{itemize}
+            \item Booleans: either “true” or “false”.
+            \item Integers: any positive whole number integer. (Note that negative integers are possible through the use of the unary minus built-in function (see built-in functions below))
+            \item Strings: a string specified as “ ”\textless contents\textgreater” ” where \textless contents\textgreater \bigskip can be any non-double quote character or one of the escape strings “\textbackslash n” (newline), “\textbackslash”” (double quote), “\textbackslash t” (tab) or “\textbackslash \textbackslash” (backslash)
+            \item Identifiers: Any token which does not fall under any other syntax rules is an identifier, which when evaluated will return the function type bound to it (see types below). If this function type is first in an expression, it will be evaluated again, resulting in the underlying function being called. Otherwise, the function type itself is returned.
+        \item Subexpressions: Any token inside an expression can itself be yet another expression.
+        \end{itemize}
+
+    \subsection{Types}
+    FsLisp has a dynamic type system, meaning that expression arguments and return values can be of any type.
+        \begin{itemize}
+            \item Booleans
+            \item Strings
+            \item Integers: Any whole-number integer, positive or negative. 
+            \item Void: the result of an empty expression.
+            \item Functions: FsLisp has higher-order functions, meaning that functions can be both passed as arguments in expressions to other functions and returned from expressions.
+        \end{itemize}
+    \subsection{Built-in functions}
+        \begin{itemize}
+            \item isFunc, isBool, isInt, isStr, isVoid: takes one argument and performs dynamic type checking on it, returning true if the argument is of the specified type.
+            \item +,-,*,/: arithmetic operators, all taking two integers and returning the result. + and - both have special cases:
+            \begin{itemize}
+                \item "-" can be unary, in which case the result is the same as “(- 0 arg)”
+                \item "+" can take strings instead of integers and will then return them concatenated.
+            \end{itemize}
+            \item =, \textgreater, \textless: relational arithmetic operations. These take arguments of the types Boolean, Integer, String and Void. Their behaviour is left up to F\#’s arithmetic operations on the internal type-representations (see Implementation below).
+            \item and, or: boolean arithmetic functions, both taking two boolean arguments.
+            \item not: unary boolean arithmetic function taking one boolean argument.
+            \item if: conditional function taking three arguments:
+                \begin{enumerate}
+                    \item a condition of type boolean
+                    \item an expression to be evaluated if the condition is true
+                    \item an optional expression to be evaluated if the condition is false
+                \end{enumerate}
+                  The function will return the result of the evaluated expression or, if the third argument is omitted and the condition is false, the value of the condition.
+            \item print: takes any number of arguments and prints them out in the console.
+            \item printDebug: prints out the internal type definition of all its arguments
+            \item -\textgreater: takes any number of arguments and evaluates them one by one in order, passing the scope returned by each expression to the next (see Implementation)
+            \item \$: Constructs and returns lambda expressions. Takes any number of arguments (at least one), where the first arguments are strings which specify the names of the functions arguments, and the final argument is the expression to be evaluated when the function is called.
+            \item let: Binds an expression to an identifier. Takes two arguments, a string representing the name of the identifier and an expression to be evaluated when said identifier is evaluated.
+        \end{itemize}
+
+    \subsection{Other syntax rules (bättre rubrik?)}
+        FsLisp supports C-style double-slash comments, which comment out all text from the start of the comment until the next newline character: “//\textless comment\textgreater”
+
 
 \section{Implementation}
 	source code $\rightarrow$ lexical analysis/lexing $\rightarrow$ parsing $\rightarrow$ ast $\rightarrow$ evaluation of ast $\rightarrow$ result
@@ -78,10 +144,10 @@ Briefly describe what we are trying to do. How did we implement everything? Whic
 
 \subsection{Evaluator}
 
-	\subsection{Token transformation}
-	\subsection{Functions}
-	\subsection{Types}
-	\subsection{Dynamic scoping}
+	\subsubsection{Token transformation}
+	\subsubsection{Functions}
+	\subsubsection{Types}
+	\subsubsection{Dynamic scoping}
 
 \section{User manual}
 
