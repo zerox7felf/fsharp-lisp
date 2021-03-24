@@ -13,7 +13,7 @@
 
    (let "fib_sequence" ($ "n" "count" (
         if (< (n) (count))(->
-            (print "Fib:" (fib (n)))
+            (print "Fib, n=" (n) ":" (fib (n)))
             (fib_sequence (+ (n) 1) (count))
         )(
             print "We are done!"

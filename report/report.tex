@@ -12,6 +12,7 @@
 \usepackage{float}
 \usepackage{color, colortbl}
 \usepackage{xcolor}
+\usepackage{tabularx}
 
 \graphicspath{ {./images/} }
 
@@ -55,23 +56,10 @@
 \maketitle
 
 \section*{Introduction}
-    \begin{itemize}
-        \item “What have we done and how?”
-        \item Implemented an interpreter for a functional, lisp-esque language called FsLisp
-            \begin{itemize}
-                \item Prefix notation
-                \item Expression-based syntax using parenthesis
-            \end{itemize}
-        \item Dynamically scoped
-        \item Lazy evaluation
-            \begin{itemize}
-                \item Function arguments are not evaluated until the function needs them
-            \end{itemize}
-        \item Dynamically typed
-        \item We perform no static type checks, all type checking is optionally done in runtime (eg. though is(...) functions or operator definitions)
-        \item Higher-order functions and Lambda expressions
-    \end{itemize}
 
+    In this project we have implemented a simple interpreter for a completely functional, lisp-like programming language we call FsLisp. Like lisp it uses
+    prefix notation and an expression-based syntax using parenthesis which closely mirror the generated abstract syntax tree. It is dynamically scoped, 
+    uses lazy evaluation, is dynamically typed and supports higher-order functions.
 
 \section{Syntax}
 
@@ -88,72 +76,152 @@
         \begin{itemize}
             \item Booleans: either “true” or “false”.
             \item Integers: any positive whole number integer. (Note that negative integers are possible through the use of the unary minus built-in function (see built-in functions below))
-            \item Strings: a string specified as “ ”\textless contents\textgreater” ” where \textless contents\textgreater \bigskip can be any non-double quote character or one of the escape strings “\textbackslash n” (newline), “\textbackslash”” (double quote), “\textbackslash t” (tab) or “\textbackslash \textbackslash” (backslash)
+            \item Strings: a string delimited by double quotes, whose contents can be any non-doble quote character or one of the escape strings
+                  “\textbackslash n” (newline), “\textbackslash”” (double quote), “\textbackslash t” (tab) or “\textbackslash \textbackslash” (backslash).
             \item Identifiers: Any token which does not fall under any other syntax rules is an identifier, which when evaluated will return the function type bound to it (see types below). If this function type is first in an expression, it will be evaluated again, resulting in the underlying function being called. Otherwise, the function type itself is returned.
         \item Subexpressions: Any token inside an expression can itself be yet another expression.
         \end{itemize}
 
     \subsection{Types}
-    FsLisp has a dynamic type system, meaning that expression arguments and return values can be of any type.
-        \begin{itemize}
-            \item Booleans
-            \item Strings
-            \item Integers: Any whole-number integer, positive or negative. 
-            \item Void: the result of an empty expression.
-            \item Functions: FsLisp has higher-order functions, meaning that functions can be both passed as arguments in expressions to other functions and returned from expressions.
-        \end{itemize}
+
+    FsLisp has a dynamic type system, meaning that expression arguments and return values can be of any type. There is no type-checking done while parsing,
+    instead all typechecks are (optionally) done at runtime. The available types are: booleans, strings, signed integers, void (the result of an empty
+    expression) and functions. The function type is used to represent function arguments to higher-order functions, as well as unnamed lambda expressions.
+
     \subsection{Built-in functions}
-        \begin{itemize}
-            \item isFunc, isBool, isInt, isStr, isVoid: takes one argument and performs dynamic type checking on it, returning true if the argument is of the specified type.
-            \item +,-,*,/: arithmetic operators, all taking two integers and returning the result. + and - both have special cases:
+        \begin{tabularx}{\textwidth} { | >{\raggedright\arraybackslash}p{3cm} | >{\raggedright\arraybackslash}X | }
+            \hline
+            isFunc, isBool,\newline isInt, isStr, isVoid &
+            Takes one argument and performs dynamic type checking on it, returning true if the argument is of the specified type. \\
+            \hline
+            +, -, *, / &
+            Arithmetic operators, all taking two integers and returning the result. + and - both have special cases:
             \begin{itemize}
                 \item "-" can be unary, in which case the result is the same as “(- 0 arg)”
                 \item "+" can take strings instead of integers and will then return them concatenated.
-            \end{itemize}
-            \item =, \textgreater, \textless: relational arithmetic operations. These take arguments of the types Boolean, Integer, String and Void. Their behaviour is left up to F\#’s arithmetic operations on the internal type-representations (see Implementation below).
-            \item and, or: boolean arithmetic functions, both taking two boolean arguments.
-            \item not: unary boolean arithmetic function taking one boolean argument.
-            \item if: conditional function taking three arguments:
-                \begin{enumerate}
-                    \item a condition of type boolean
-                    \item an expression to be evaluated if the condition is true
-                    \item an optional expression to be evaluated if the condition is false
-                \end{enumerate}
-                  The function will return the result of the evaluated expression or, if the third argument is omitted and the condition is false, the value of the condition.
-            \item print: takes any number of arguments and prints them out in the console.
-            \item printDebug: prints out the internal type definition of all its arguments
-            \item -\textgreater: takes any number of arguments and evaluates them one by one in order, passing the scope returned by each expression to the next (see Implementation)
-            \item \$: Constructs and returns lambda expressions. Takes any number of arguments (at least one), where the first arguments are strings which specify the names of the functions arguments, and the final argument is the expression to be evaluated when the function is called.
-            \item let: Binds an expression to an identifier. Takes two arguments, a string representing the name of the identifier and an expression to be evaluated when said identifier is evaluated.
-        \end{itemize}
+            \end{itemize} \\
+            \hline
+            =, \textgreater, \textless &
+            Relational arithmetic operations. These take arguments of the types Boolean, Integer, String and Void. Their behaviour is left up
+            to F\#’s arithmetic operations on the internal type-representations. \\
+            \hline
+            and, or, not &
+            Boolean arithmetic functions.\\
+            \hline
+            if &
+            Conditional function taking three arguments:
+            \begin{enumerate}
+                \item a condition of type boolean
+                \item an expression to be evaluated if the condition is true
+                \item an optional expression to be evaluated if the condition is false
+            \end{enumerate}
+            The function will return the result of the evaluated expression or, if the third argument is omitted and the condition is false,
+            the value of the condition.\\
+            \hline
+            print &
+            Takes any number of arguments and prints them out in the console.\\
+            \hline
+            printDebug &
+            Prints out the internal type definition of all its arguments.\\
+            \hline
+            -\textgreater &
+            Takes any number of arguments and evaluates them one by one in order, passing the scope returned by each expression to the next
+            (see Implementation). \\
+            \hline
+            \$ &
+            Constructs and returns lambda expressions. Takes any number of arguments (at least one), where the first arguments are strings
+            which specify the names of the functions arguments, and the final argument is the expression to be evaluated when the function is called.\\
+            \hline
+            let &
+            Binds an expression to an identifier. Takes two arguments, a string representing the name of the identifier and an expression to be evaluated
+            when said identifier is evaluated. \\
+            \hline
+        \end{tabularx}
 
-    \subsection{Other syntax rules (bättre rubrik?)}
+    \subsection{Other syntax rules}
         FsLisp supports C-style double-slash comments, which comment out all text from the start of the comment until the next newline character: “//\textless comment\textgreater”
 
 
 \section{Implementation}
-	source code $\rightarrow$ lexical analysis/lexing $\rightarrow$ parsing $\rightarrow$ ast $\rightarrow$ evaluation of ast $\rightarrow$ result
-
-Briefly describe what we are trying to do. How did we implement everything? Which techniques and algorithms did we use, and how do they work?
-\newline
-\newline
 The FsLisp interpreter uses a recursive-descent parser to lexically analyze the source code and to then place the analyzed tokens into an abstract syntax tree. This syntax tree is then used by an evaluator which recursively translates identifiers into function values (given an initial scope in the form of a symbol table) and calls these functions with the sub-trees representing the arguments of the expression. It is then up to the individual functions to evaluate their arguments as needed.
+
+\subsection{Abstract syntax tree}
+    The structure of the styntax tree is dependent on the language's data structures for its types. These are organised into three nested groups:
+    \begin{itemize}
+        \item Syntax tokens: \newline
+              These tokens describe tokens as lexed by the parser and directly represent values present in the source code:
+              either identifiers, or:
+        \item Value tokens: \newline
+              These tokens describe actual values as used by and returned by the evaluator and the built-in functions. They can be either function
+              values for representing higher-order functions, or:
+        \item Constant values: \newline
+              These can be of any of the other types available in the language, including the Void type, and contain their internal data.
+              These are separated from function values as they represent data that can be operated on in ways that functions cannot, and vice versa.
+    \end{itemize}
+    The abstract syntax tree (AST) is defined by a recursive tree structure where each node can have one of three contents:
+    \begin{itemize}
+        \item A sub-tree containing a root node (itself represented by an AST type) along with a list of child-nodes (again recursively
+              represented by AST types). The root node represents the first argument of an expression, while the list of child nodes represents
+              its arguments.
+        \item A value node containing either an identifier, a function value or a value constant.
+        \item An empty tree.
+    \end{itemize}
 
 \subsection{Parser}
 
-	\subsection{Lexical analysis}
-	\subsection{Tokens}
-	\subsection{Abstract syntax tree}
+    The parser is impl. as a function which parses a single expression, and which recursively calls itself. It steps through the source code
+    chr by char and calls one of many helper functions depending on what it finds. Parsing of numbers, comments, strings and whitespace is all
+    handled by these helper functions, which themselves call the parser function after completing parsing of their part of the syntax. The parser
+    keeps a list of parsed tokens, which these helper functions may optionally add any parsed tokens to (for example, the string helper function
+    adds a string constant token to this list before passing it to the parser). For any chars which are not handled by these helper functions,
+    the parser adds it to a buffer and calls itself to keep parsing the next character. When the parser reaches a whitespace character, it takes
+    any potential content in this buffer and creates an identifier syntax token out of it and stores it in the buffer for parsed tokens before
+    continuing. When the parser reaches a closed parenthesis it takes the list of parsed tokens and builds an AST out of them. If there is more than
+    one token parsed it will return a sub-tree with the first node as the root. Otherwise, if there is only one item in the expression, that item is
+    returned as a value node. The final return values of the parser is this generated AST, along with character index, line and column numbers to
+    indicate the position of where the parser stopped. If the parser reaches an open parenthesis in the expression it recursively calls itself to
+    parse the contained subexpression, and uses the returned character index to skip over the sub-expression and to keep parsing its own.
+
+    A side-effect of having the parser stop at a closed parenthesis character is that it will ignore any text following the closed parenthesis of
+    the first expression. To prevent confusion in the case of a user-made syntax error (such as a stray or duplicate parenthesis), the parser
+    will give a warning when seeing left over text after the root expression.
 
 \subsection{Evaluator}
 
-	\subsubsection{Token transformation}
-	\subsubsection{Functions}
-	\subsubsection{Types}
-	\subsubsection{Dynamic scoping}
+    evaluates an ast node and returns its value in the form of a value token.
+    Looks at ast.
+    if ast node is empty, return void
+    if the node is a value it does one of two things: if the value is an identifier it looks up the corresponding function and executes it.
+    otherwise if it is a sub-tree it evaluates the root node. If the evaluation of the root node returns a function value it executes that function
+    with the rest of the arguments. If the root node evaluates to a value node it returns an error message, as it cannot 'call' a constant.
+
+    the symbol table used by the evaluator is a map of strings containing function names mapping to functions which a list of ast data structures
+    as arguments to evaluate, a symbol table to act as its scope and returns a value token along with a new scope. the fact that functions both
+    receive and return new scopes allows parts of the language like "let" and "->" to be ordinary functions, which operate on their scope and 
+    their arguments, optionally return a new scope.
+    when doing lookups for functions based on identifiers, the evaluator simply uses this map to find the right function. The function values
+    used in the language are the same as the functions kept in the symbol table.
+
+\subsection{Source files}
+
+    The parser and evaluator are implemented in parser.fs and eval.fs respectively, while code for handling command-line arguments, the read-evaluate-print
+    loop and interpreting files is in main.fs. All data structures beloning to the symbol table and abstract syntax tree can be found in types.fs.
+    Function definitions are stored with the evaluator in eval.fs.
 
 \section{User manual}
 
-\section{Interesting findings}
+    For a description of the syntax, see Syntax above and example scripts provided in the sources.
+
+    The interpreter (FsLisp.exe) is run by specifying any number file names as command line arguments. These will then be run in sequence, unless
+    no file names are given, in which case an interactive read-evaluate-print loop is started. The parser supports a few debugging options, which can
+    be found by running the interpreter with the -h or --help command line option.
+
+\section{Final thoughts}
+
+    The interpreter we made in this project is still at a prototype stage and could therefore be improved in many ways. Most important is probably speed:
+    the Fibonacci sequence generator found in the included examples in the sourcecode takes considerable time, measurable in seconds (!). The code for
+    generating new entries in the symbol table is also not very pretty and would benefit from better abstraction of handling of scopes and function
+    arguments. The read-evaluate-print loop is also not very good, as it does not handle navigation keys at all. Worse, accidentally pressing them
+    still stores them in memory even though they are not displayed properly, causing the parser to raise errors when passed the string.
 
 \end{document}

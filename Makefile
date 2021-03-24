@@ -1,10 +1,9 @@
 # Makefile
 
-all: Main.exe
+all: FsLisp.exe
 
-Main.exe: main.fs types.fs parser.fs eval.fs
-	fsharpc --out:Main.exe types.fs parser.fs eval.fs main.fs
+FsLisp.exe: main.fs types.fs parser.fs eval.fs
+	fsharpc --out:FsLisp.exe types.fs parser.fs eval.fs main.fs
 
-run: Main.exe
-	mono Main.exe test.fslisp
-# mono Main.exe testscript.fslisp
+run: FsLisp.exe
+	mono FsLisp.exe
