@@ -1,5 +1,6 @@
 (->
-   (let "fib" ($ "n" (
+    // Function which generates the n:th number in the fibonacci sequence
+    (let "fib" ($ "n" (
         if (= 0 (n))(
             n
         )(
@@ -9,15 +10,18 @@
                 + (fib(- (n) 1)) (fib(- (n) 2))
             )
         )
-   )))
+    )))
 
-   (let "fib_sequence" ($ "n" "count" (
+    // Generate the first n numbers
+    (let "fib_sequence" ($ "n" "count" (
         if (< (n) (count))(->
             (print "Fib, n=" (n) ":" (fib (n)))
             (fib_sequence (+ (n) 1) (count))
         )(
             print "We are done!"
         )
-   )))
-   (fib_sequence 1 20)
+    )))
+
+    // Generate the 20 first (slooow...)
+    (fib_sequence 1 20)
 )

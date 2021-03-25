@@ -1,0 +1,33 @@
+(-> // This function takes a number of subexpressions and evaluates them in order.
+    // If we do not use this function, the interpreter will interpret our function
+    // definition and subsequent expressions as arguments in a single expression.
+    // (which they still are, it is just that they are passed to the -> function)
+    // which executes them all.
+
+    // Define a function named myFunc which returns 12.
+    (let "myFunc" 12)
+    // We need to put myFunc in parenthesis to call it, instead of simply passing the function value to print.
+    (print (myFunc))
+
+    // Define another function named myFunc2 which prints hello
+    (let "myFunc2"
+        ($ (print "hello!"))
+    )
+    (myFunc2)
+
+    // Define myFunc3, which takes argument number and prints it + 12 out if it is a number.
+    (let "myFunc3"
+        ($ "number" (
+            if (isInt (number)) (
+                // Note here that number will be defined as a function in the local scope, so we need to call it to get its value
+                print (+ (number) 12)
+            ) (
+                print "Argument is not a number!"
+            )
+        ))
+    )
+    (myFunc3 10)   // Works
+    (myFunc3 "10") // Doesn't!
+    // This call will be returning the result of the print call, which is Void.
+    // The interpreter will print this out at the end of the scripts execution.
+)

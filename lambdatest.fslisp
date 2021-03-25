@@ -1,9 +1,0 @@
-(->
-    (let "hej" ($ "argument" (->
-        (print "asd")
-        (print (argument))
-    )))
-
-    (hej 12)
-    (print "Slut")
-)

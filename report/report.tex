@@ -31,7 +31,9 @@
 \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
 
 \lstdefinestyle{mystyle} {
-	keywordstyle=\color{codepurple},
+	%% keywordstyle=\color{codepurple},
+    %% ^- this gets weird, our syntax isn't super-lisp-ey, so highlights dont show up consistently.
+	keywordstyle=\color{codegray},
 	commentstyle=\color{codegray},
 	%% stringstyle=\color{codegreen},
 	basicstyle=\ttfamily\footnotesize,
@@ -62,22 +64,18 @@
     uses lazy evaluation, is dynamically typed and supports higher-order functions.
 
 \section{Syntax}
-
-\begin{lstlisting}[language=lisp]
-
-(let "code go brrrr" "HAHA YES")
-
-\end{lstlisting}
     
-    All syntax rules follow the expression syntax: (fun arg arg ...)
-    two paren. with a number of tokens. If there is more than one token, the first one will be evaluated with the others as arguments, otherwise the first token is evaluated and returned.
+    All syntax rules follow the expression syntax:
+    \lstinline{(fun arg arg ...)}\newline
+    Expressions consist of two parenthesis with a number of tokens listed inside, separated by\newline whitespace. If there is more than one token,
+    the first one will be evaluated with the others as arguments, otherwise the first token is evaluated and returned.
     
-    \subsection{Tokens}
+    \subsection{Available tokens}
         \begin{itemize}
-            \item Booleans: either “true” or “false”.
-            \item Integers: any positive whole number integer. (Note that negative integers are possible through the use of the unary minus built-in function (see built-in functions below))
+            \item Booleans: either \lstinline{true} or \lstinline{false}.
+            \item Integers: any positive whole number integer (note that negative integers are possible through the use of the unary minus built-in function, see built-in functions below).
             \item Strings: a string delimited by double quotes, whose contents can be any non-doble quote character or one of the escape strings
-                  “\textbackslash n” (newline), “\textbackslash”” (double quote), “\textbackslash t” (tab) or “\textbackslash \textbackslash” (backslash).
+                  \lstinline{"\n"} (newline), \lstinline{"\""} (double quote), \lstinline{"\t"} (tab) or \lstinline{"\\"} (backslash).
             \item Identifiers: Any token which does not fall under any other syntax rules is an identifier, which when evaluated will return the function type bound to it (see types below). If this function type is first in an expression, it will be evaluated again, resulting in the underlying function being called. Otherwise, the function type itself is returned.
         \item Subexpressions: Any token inside an expression can itself be yet another expression.
         \end{itemize}
@@ -91,24 +89,24 @@
     \subsection{Built-in functions}
         \begin{tabularx}{\textwidth} { | >{\raggedright\arraybackslash}p{3cm} | >{\raggedright\arraybackslash}X | }
             \hline
-            isFunc, isBool,\newline isInt, isStr, isVoid &
+            \lstinline{isFunc}, \lstinline{isBool},\newline \lstinline{isInt}, \lstinline{isStr}, \lstinline{isVoid} &
             Takes one argument and performs dynamic type checking on it, returning true if the argument is of the specified type. \\
             \hline
-            +, -, *, / &
+            \lstinline{+}, \lstinline{-}, \lstinline{*}, \lstinline{/} &
             Arithmetic operators, all taking two integers and returning the result. + and - both have special cases:
             \begin{itemize}
-                \item "-" can be unary, in which case the result is the same as “(- 0 arg)”
-                \item "+" can take strings instead of integers and will then return them concatenated.
+                \item \lstinline{-} can be unary, in which case the result is the same as “(- 0 arg)”
+                \item \lstinline{+} can take strings instead of integers and will then return them concatenated.
             \end{itemize} \\
             \hline
-            =, \textgreater, \textless &
+            \lstinline{=}, \lstinline{>}, \lstinline{<} &
             Relational arithmetic operations. These take arguments of the types Boolean, Integer, String and Void. Their behaviour is left up
             to F\#’s arithmetic operations on the internal type-representations. \\
             \hline
-            and, or, not &
+            \lstinline{and}, \lstinline{or}, \lstinline{not} &
             Boolean arithmetic functions.\\
             \hline
-            if &
+            \lstinline{if} &
             Conditional function taking three arguments:
             \begin{enumerate}
                 \item a condition of type boolean
@@ -118,17 +116,17 @@
             The function will return the result of the evaluated expression or, if the third argument is omitted and the condition is false,
             the value of the condition.\\
             \hline
-            print &
+            \lstinline{print} &
             Takes any number of arguments and prints them out in the console.\\
             \hline
-            printDebug &
+            \lstinline{printDebug} &
             Prints out the internal type definition of all its arguments.\\
             \hline
-            -\textgreater &
+            \lstinline{->} &
             Takes any number of arguments and evaluates them one by one in order, passing the scope returned by each expression to the next
             (see Implementation). \\
             \hline
-            \$ &
+            \lstinline{\$} &
             Constructs and returns lambda expressions. Takes any number of arguments (at least one), where the first arguments are strings
             which specify the names of the functions arguments, and the final argument is the expression to be evaluated when the function is called.\\
             \hline
@@ -139,8 +137,10 @@
         \end{tabularx}
 
     \subsection{Other syntax rules}
-        FsLisp supports C-style double-slash comments, which comment out all text from the start of the comment until the next newline character: “//\textless comment\textgreater”
+        FsLisp supports C-style double-slash comments, which comment out all text from the start of the comment until the next newline character:
+        \lstinline{//<comment>}
 
+\newpage
 
 \section{Implementation}
 The FsLisp interpreter uses a recursive-descent parser to lexically analyze the source code and to then place the analyzed tokens into an abstract syntax tree. This syntax tree is then used by an evaluator which recursively translates identifiers into function values (given an initial scope in the form of a symbol table) and calls these functions with the sub-trees representing the arguments of the expression. It is then up to the individual functions to evaluate their arguments as needed.
@@ -169,38 +169,37 @@ The FsLisp interpreter uses a recursive-descent parser to lexically analyze the 
 
 \subsection{Parser}
 
-    The parser is impl. as a function which parses a single expression, and which recursively calls itself. It steps through the source code
-    chr by char and calls one of many helper functions depending on what it finds. Parsing of numbers, comments, strings and whitespace is all
+    The parser is implemented as a function which parses a single expression, and which recursively calls itself. It steps through the source code
+    character by character and calls one of many helper functions depending on what it finds. Parsing of numbers, comments, strings and whitespace is all
     handled by these helper functions, which themselves call the parser function after completing parsing of their part of the syntax. The parser
     keeps a list of parsed tokens, which these helper functions may optionally add any parsed tokens to (for example, the string helper function
     adds a string constant token to this list before passing it to the parser). For any chars which are not handled by these helper functions,
-    the parser adds it to a buffer and calls itself to keep parsing the next character. When the parser reaches a whitespace character, it takes
-    any potential content in this buffer and creates an identifier syntax token out of it and stores it in the buffer for parsed tokens before
-    continuing. When the parser reaches a closed parenthesis it takes the list of parsed tokens and builds an AST out of them. If there is more than
-    one token parsed it will return a sub-tree with the first node as the root. Otherwise, if there is only one item in the expression, that item is
-    returned as a value node. The final return values of the parser is this generated AST, along with character index, line and column numbers to
-    indicate the position of where the parser stopped. If the parser reaches an open parenthesis in the expression it recursively calls itself to
-    parse the contained subexpression, and uses the returned character index to skip over the sub-expression and to keep parsing its own.
+    the parser adds it to a buffer and calls itself to keep parsing the next character.
 
-    A side-effect of having the parser stop at a closed parenthesis character is that it will ignore any text following the closed parenthesis of
-    the first expression. To prevent confusion in the case of a user-made syntax error (such as a stray or duplicate parenthesis), the parser
-    will give a warning when seeing left over text after the root expression.
+    When the parser reaches a whitespace character, it takes
+    any potential content in this buffer and creates an identifier syntax token out of it, placing it in the list of parsed tokens.
+    When the parser reaches a closed parenthesis it takes the list of parsed tokens and builds an AST out of them. If there is more than
+    one token it will return a sub-tree with the first node as the root.\newline Otherwise, if there is only one item in the expression, that item is
+    returned as a value node. The final return values of the parser is this generated AST, along with input index, line and column numbers to
+    indicate the position of where the parser stopped. If the parser reaches an open parenthesis in the expression it recursively calls itself to
+    parse the contained subexpression, using the returned input index to skip over the sub-expression.
 
 \subsection{Evaluator}
 
-    evaluates an ast node and returns its value in the form of a value token.
-    Looks at ast.
-    if ast node is empty, return void
-    if the node is a value it does one of two things: if the value is an identifier it looks up the corresponding function and executes it.
-    otherwise if it is a sub-tree it evaluates the root node. If the evaluation of the root node returns a function value it executes that function
-    with the rest of the arguments. If the root node evaluates to a value node it returns an error message, as it cannot 'call' a constant.
-
-    the symbol table used by the evaluator is a map of strings containing function names mapping to functions which a list of ast data structures
-    as arguments to evaluate, a symbol table to act as its scope and returns a value token along with a new scope. the fact that functions both
-    receive and return new scopes allows parts of the language like "let" and "->" to be ordinary functions, which operate on their scope and 
-    their arguments, optionally return a new scope.
-    when doing lookups for functions based on identifiers, the evaluator simply uses this map to find the right function. The function values
-    used in the language are the same as the functions kept in the symbol table.
+    The evaluator takes a symbol table as a scope and evaluates an AST node using it, returning its value in the form of a value token.
+    If the node is a value node it does one of two things: if it is an identifier it looks up and returns the corresponding function,
+    otherwise it simply returns the contained value token. If the node is a sub-tree it evaluates the root node and calls it with the child
+    nodes as unevaluated arguments. If the root node evaluates to something other than a function, it returns an error message, as it cannot
+    'call' a constant value. Finally, if the node is empty, the evaluator will return void.
+    
+    The symbol table used by the evaluator is a map of strings containing function names mapping to functions. These functions take a list of unevaluated
+    AST nodes as arguments, along with a symbol table to act as its scope. These functions also return a value token as the value to be passed
+    as a result in the language, and another symbol table to act as a new scope. It is left up to these functions to evaluate their arguments and
+    to handle their internal scopes. Letting functions operate not only on data, but on the scope strucutre itself, is what lets parts of the
+    language like function bindings through \lstinline{let} be implemented as functions. Passing these scopes from function to function also makes the
+    implementation of a dynamic scope very simple. A function nested inside another function will receive the scope of the first function during
+    evaluation, but the first function can disregard the scope returned by the nested function, letting it go out of scope. Functions like \lstinline{->}
+    also become possible, which pass the scope of one evaluated argument to the evaluation of the next.
 
 \subsection{Source files}
 
@@ -210,18 +209,21 @@ The FsLisp interpreter uses a recursive-descent parser to lexically analyze the 
 
 \section{User manual}
 
-    For a description of the syntax, see Syntax above and example scripts provided in the sources.
-
+    For a description of the syntax, see Syntax above and example scripts provided in the sources.\newline
     The interpreter (FsLisp.exe) is run by specifying any number file names as command line arguments. These will then be run in sequence, unless
     no file names are given, in which case an interactive read-evaluate-print loop is started. The parser supports a few debugging options, which can
     be found by running the interpreter with the -h or --help command line option.
 
+\newpage
+
 \section{Final thoughts}
 
     The interpreter we made in this project is still at a prototype stage and could therefore be improved in many ways. Most important is probably speed:
-    the Fibonacci sequence generator found in the included examples in the sourcecode takes considerable time, measurable in seconds (!). The code for
+    the Fibonacci sequence generator found in the included examples in the sourcecode takes considerable time, measurable in seconds(!). The code for
     generating new entries in the symbol table is also not very pretty and would benefit from better abstraction of handling of scopes and function
     arguments. The read-evaluate-print loop is also not very good, as it does not handle navigation keys at all. Worse, accidentally pressing them
-    still stores them in memory even though they are not displayed properly, causing the parser to raise errors when passed the string.
+    still stores them in memory even though they are not displayed properly, causing the parser to raise errors when passed the string. We are also
+    not currently doing any checks on the function names passed to \lstinline{let} or \lstinline{$}. Because of this, the user can create functions which they later cannot
+    access, which is not ideal.
 
 \end{document}
